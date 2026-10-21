@@ -88,6 +88,21 @@ async function headers(): Promise<Record<string, string>> {
   return h;
 }
 
+export const speechHeaders = headers;
+
+/** The resource endpoint avatar calls go to, or undefined when none is configured. */
+export const speechEndpoint = (): string | undefined => config().endpoint;
+
+/** Whether the resource is addressed by key rather than Entra ID. */
+export const speechKeyAuth = (): string | undefined => config().key;
+
+/** An Entra access token for Azure Speech. */
+export async function speechBearerToken(): Promise<string> {
+  if (!tokenProvider)
+    tokenProvider = getBearerTokenProvider(buildCredential(), SCOPE);
+  return tokenProvider();
+}
+
 function url(synthesisId: string): string {
   const { endpoint } = config();
   if (!endpoint) throw avatarNotConfigured();

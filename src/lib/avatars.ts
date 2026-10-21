@@ -448,6 +448,22 @@ export const PRESENTER_ENTRIES = Object.entries(AVATAR_PRESETS).filter(([, p]) =
   batchSupported(p),
 );
 
+/**
+ * Presenters for the live (real-time) avatar view, which streams over WebRTC
+ * instead of batch synthesis and so can use VASA-2.
+ */
+export const LIVE_PRESENTERS = Object.entries(AVATAR_PRESETS).filter(
+  ([, p]) => p.photoModel === "vasa-2",
+);
+
+/** The only regions Microsoft lists for vasa-2 (preview). */
+export const VASA2_REGIONS = [
+  "westus2",
+  "centralindia",
+  "southeastasia",
+  "swedencentral",
+] as const;
+
 export function presenter(key?: string): { key: string; preset: AvatarPreset } {
   const k =
     key && AVATAR_PRESETS[key] && batchSupported(AVATAR_PRESETS[key])

@@ -35,6 +35,7 @@
     "html-to-image": "^1.11.13",
     "jszip": "^3.10.1",
     "mammoth": "^1.12.2",
+    "microsoft-cognitiveservices-speech-sdk": "^1.52.0",
     "nanoid": "^6.0.1",
     "next": "15.5.25",
     "openai": "^7.15.0",
