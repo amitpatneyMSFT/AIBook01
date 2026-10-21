@@ -187,6 +187,7 @@ export async function startTrainingRender(id: string): Promise<void> {
       character: preset.character,
       style: preset.style,
       photo: preset.photo,
+      photoModel: preset.photoModel,
       background: backgroundColor(c.background),
       description: c.title,
     });
@@ -509,6 +510,7 @@ async function pollComposed(id: string): Promise<void> {
         character: preset.character,
         style: preset.style,
         photo: preset.photo,
+        photoModel: preset.photoModel,
         background: backgroundColor(c.background),
         description: `${c.title} — section ${i + 1}`,
         transparent: true,

@@ -7,6 +7,7 @@ import {
   getBearerTokenProvider,
   type TokenCredential,
 } from "@azure/identity";
+import { DEFAULT_PHOTO_MODEL } from "./avatars";
 
 /**
  * Azure Speech "Text to Speech Avatar" batch synthesis — the Foundry model
@@ -142,8 +143,10 @@ export type AvatarJobOptions = {
   character: string;
   /** Omitted for characters Microsoft lists without a style. */
   style?: string;
-  /** A head-only photo avatar, driven by the VASA-1 model. */
+  /** A head-only photo avatar, driven by a VASA model. */
   photo?: boolean;
+  /** The VASA base model for a photo avatar; VASA-1 when omitted. */
+  photoModel?: string;
   /** #RRGGBB; ignored when a background image is configured or `transparent` is set. */
   background: string;
   description?: string;
@@ -175,7 +178,9 @@ export async function submitAvatarJob(
     avatarConfig: {
       talkingAvatarCharacter: opts.character,
       ...(opts.style ? { talkingAvatarStyle: opts.style } : {}),
-      ...(opts.photo ? { photoAvatarBaseModel: "vasa-1" } : {}),
+      ...(opts.photo
+        ? { photoAvatarBaseModel: opts.photoModel ?? DEFAULT_PHOTO_MODEL }
+        : {}),
       ...(opts.transparent
         ? {
             videoFormat: "webm",

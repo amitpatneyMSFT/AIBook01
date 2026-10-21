@@ -18,9 +18,15 @@ export type AvatarPreset = {
   gender: "Female" | "Male";
   /** A PINNED_VOICES speaker that suits the presenter. */
   voice: string;
-  /** Head-only photo avatar, driven by Microsoft's VASA-1 model instead of the full-body video model. */
+  /** Head-only photo avatar, driven by a VASA model instead of the full-body video model. */
   photo?: boolean;
+  /** Photo avatars only: the VASA base model that drives it. Defaults to VASA-1. */
+  photoModel?: PhotoModel;
 };
+
+export type PhotoModel = "vasa-1" | "vasa-2";
+
+export const DEFAULT_PHOTO_MODEL: PhotoModel = "vasa-1";
 
 /** The presenter's own name, e.g. "Lisa" from "Lisa · casual, seated". */
 export const presenterName = (label: string): string => label.split(" · ")[0];
@@ -31,9 +37,12 @@ export const presenterName = (label: string): string => label.split(" · ")[0];
  * one entry per character and style.
  *
  * Keys of the first seven are saved in transcripts, so they never change.
- * The "head-" entries are the 30 standard talking-head (photo) avatars. They
- * render head-only through the VASA-1 model, so they are submitted with
- * photoAvatarBaseModel.
+ * The "head-" entries are the standard talking-head (photo) avatars. They
+ * render head-only through a VASA model, so they are submitted with
+ * photoAvatarBaseModel: 30 use VASA-1 and the four newer, more expressive
+ * ones use VASA-2. VASA-2 is in preview, limited to a few regions, and
+ * Microsoft's docs say batch synthesis does not support it yet, so those jobs
+ * may be rejected until the service enables it.
  *
  * Jeff is absent because Microsoft retires him in December 2026 and no longer
  * lists his styles.
@@ -383,6 +392,39 @@ export const AVATAR_PRESETS: Record<string, AvatarPreset> = {
     gender: "Female",
     voice: "Nova",
     photo: true,
+  },
+  // VASA-2 talking heads (preview).
+  "head-leonie": {
+    label: "Leonie · talking head, VASA-2 preview",
+    character: "leonie",
+    gender: "Female",
+    voice: "Emma",
+    photo: true,
+    photoModel: "vasa-2",
+  },
+  "head-leonie-professional": {
+    label: "Leonie Professional · talking head, VASA-2 preview",
+    character: "leonie-professional",
+    gender: "Female",
+    voice: "Serena",
+    photo: true,
+    photoModel: "vasa-2",
+  },
+  "head-george": {
+    label: "George · talking head, VASA-2 preview",
+    character: "george",
+    gender: "Male",
+    voice: "Davis",
+    photo: true,
+    photoModel: "vasa-2",
+  },
+  "head-marcel": {
+    label: "Marcel · talking head, VASA-2 preview",
+    character: "marcel",
+    gender: "Male",
+    voice: "Brian",
+    photo: true,
+    photoModel: "vasa-2",
   },
 };
 /** The picture shown for a presenter in the gallery. */

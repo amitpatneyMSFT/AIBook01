@@ -64,9 +64,15 @@ describe("HD alternates", () => {
 });
 
 describe("presenter roster", () => {
-  it("lists every standard avatar: 21 full-body and 30 talking heads", () => {
+  it("lists every standard avatar: 21 full-body and 34 talking heads", () => {
     const all = Object.values(AVATAR_PRESETS);
     expect(all.filter((p) => !p.photo)).toHaveLength(21);
-    expect(all.filter((p) => p.photo)).toHaveLength(30);
+    expect(all.filter((p) => p.photo)).toHaveLength(34);
+  });
+
+  it("drives four talking heads with VASA-2 and the rest with VASA-1", () => {
+    const heads = Object.values(AVATAR_PRESETS).filter((p) => p.photo);
+    expect(heads.filter((p) => p.photoModel === "vasa-2")).toHaveLength(4);
+    expect(heads.filter((p) => !p.photoModel)).toHaveLength(30);
   });
 });
