@@ -25,6 +25,9 @@ const connectSrc = [
   "wss://*.openai.azure.com",
   "https://*.cognitiveservices.azure.com",
   "wss://*.cognitiveservices.azure.com",
+  // Speech SDK sockets for live avatars (the WebRTC media itself is not governed by CSP).
+  "https://*.tts.speech.microsoft.com",
+  "wss://*.tts.speech.microsoft.com",
   "https://api.openai.com",
   "wss://api.openai.com",
   ...(dev ? ["ws:", "wss:"] : []),

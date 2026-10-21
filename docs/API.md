@@ -201,6 +201,8 @@ See [Live discussions](discussions.md#how-it-works) for the flow.
 | POST | `/api/discussion` | `{ notebookId, sourceIds?, setup: { mode, voice?, focus?, stance? }, sdp }` | `{ answer, citations }`: the SDP answer for the browser's WebRTC offer, and the numbered opening excerpts. The client secret stays on the server |
 | POST | `/api/discussion/search` | `{ notebookId, sourceIds?, query, start, known?: [{ passageId, n }] }` | `{ output, citations }`: the tool output for the AI and the new excerpts, numbered from `start` |
 | POST | `/api/discussion/save` | `{ notebookId, setup, turns: [{ role, text, cites }], citations, results?, durationSec }` | `201 { note, warning? }`: the discussion saved as a note with takeaways |
+| GET | `/api/live-presenter` | — | `{ ready, region? }`, or `{ ready: false, problem }` (no Speech resource, or a region without VASA-2) |
+| POST | `/api/live-presenter` | — | `{ token, region, ice: { urls, username, credential } }`: short-lived Speech token (the server exchanges its key or Entra credential for it; neither is returned) and TURN relay for the browser's live VASA-2 avatar session |
 
 `mode` is one of `discussion`, `debate`, `qa`, `expert`, `interview`,
 `quiz` or `tutor`. `voice` is a realtime voice: `marin` (default), `cedar`,

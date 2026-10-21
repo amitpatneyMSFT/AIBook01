@@ -222,6 +222,29 @@ synthesis does not support `vasa-2` yet; add `"vasa-2"` to `BATCH_PHOTO_MODELS`
 in `src/lib/avatars.ts` once it does. Jeff is left out because Microsoft
 retires him in December 2026.
 
+### Live VASA-2 presenter
+
+The four VASA-2 avatars can be used today through **Training video > Options >
+Live > Try a live VASA-2 presenter**. It streams the avatar in your browser over
+WebRTC with the Speech SDK (real-time synthesis, which supports `vasa-2`), so it
+does not use batch synthesis. Pick a presenter and voice, press **Start session**,
+type text and press **Speak**.
+
+- Live only: nothing is recorded, saved or added to a training video, and the
+  background cannot be transparent.
+- The server hands the browser a short-lived Speech token and a relay server
+  (`/api/live-presenter`). The server exchanges its own credential (the key, or
+  its Entra token) for that short-lived Speech token and returns only the
+  exchanged token, so keys and Entra tokens never reach the page. With Entra, set
+  `AZURE_SPEECH_RESOURCE_ID` (or `AZURE_SPEECH_ENDPOINT`) so the server can reach
+  the resource's endpoint.
+- `AZURE_SPEECH_REGION` must be West US 2, Central India, Southeast Asia or
+  Sweden Central, the only regions Microsoft lists for `vasa-2` (preview). The
+  panel says so when it is not.
+- Your network must allow WebRTC to `relay.communication.microsoft.com` (UDP 3478,
+  TCP 443). Sessions end after 5 idle minutes or 30 minutes in total. Each session
+  start counts about 25 cents against the daily budget.
+
 ## Limits and behavior
 
 - **Length.** Short, medium and long target about 3, 6 and 10 minutes. The

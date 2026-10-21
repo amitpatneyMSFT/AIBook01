@@ -12,6 +12,7 @@ import NarrationOptions from "@/components/NarrationOptions";
 import StudioCard from "@/components/StudioCard";
 import VoicePicker from "@/components/VoicePicker";
 import PresenterGallery from "@/components/PresenterGallery";
+import LivePresenterModal from "@/components/LivePresenterModal";
 import { voiceNickname } from "@/lib/voicecatalog";
 import { STUDIO, STUDIO_SECTIONS, studioIcon, studioLabel } from "@/lib/studio";
 import { DEFAULT_SLIDE_THEME, SLIDE_THEMES } from "@/lib/slides";
@@ -329,6 +330,7 @@ export default function StudioPanel({
   );
   const [trainerStyle, setTrainerStyle] = useState<string | undefined>();
   const [trainerGallery, setTrainerGallery] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
   const [trainingLen, setTrainingLen] = useState<AudioLength>("short");
   const [whiteboardLen, setWhiteboardLen] =
     useState<WhiteboardLength>("standard");
@@ -1174,6 +1176,20 @@ export default function StudioPanel({
                           setTrainerStyle(undefined);
                         }}
                       />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="w-11 shrink-0 text-[10px] tracking-wide text-[var(--muted)] uppercase">
+                      Live
+                    </span>
+                    <button
+                      className="btn !px-2 !py-1 !text-[11px]"
+                      onClick={() => setLiveOpen(true)}
+                    >
+                      Try a live VASA-2 presenter
+                    </button>
+                    {liveOpen && (
+                      <LivePresenterModal onClose={() => setLiveOpen(false)} />
                     )}
                   </div>
                   <div className="flex items-center gap-2">
