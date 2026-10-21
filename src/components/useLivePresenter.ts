@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { LiveChunk } from "@/lib/livescript";
 
 export type LivePhase = "idle" | "connecting" | "ready" | "speaking" | "ended" | "error";
 
@@ -25,13 +26,19 @@ export function useLivePresenter(
 ) {
   const [phase, setPhase] = useState<LivePhase>("idle");
   const [error, setError] = useState<string | null>(null);
+  /** The section being spoken, so the page can follow along. */
+  const [section, setSection] = useState<number | null>(null);
   const synth = useRef<Synth | null>(null);
+  // Bumped on every speak and stop, so an older speak loop knows to quit.
+  const spoken = useRef(0);
   const peer = useRef<RTCPeerConnection | null>(null);
   // Bumped on every start and end so a slow async step can tell it was superseded.
   const run = useRef(0);
 
   const release = useCallback(async () => {
     run.current++;
+    spoken.current++;
+    setSection(null);
     const s = synth.current;
     const p = peer.current;
     synth.current = null;
@@ -120,34 +127,48 @@ export function useLivePresenter(
     [release, videoRef, audioRef],
   );
 
-  const speak = useCallback(async (text: string) => {
+  /** Speaks the pieces in order. A newer speak or a stop ends this one early. */
+  const speak = useCallback(async (chunks: LiveChunk[]) => {
     const s = synth.current;
-    if (!s || !text.trim()) return;
+    if (!s || !chunks.length) return;
     const id = run.current;
+    const turn = ++spoken.current;
+    const mine = () => id === run.current && turn === spoken.current;
     setPhase("speaking");
     setError(null);
     try {
       const SDK = await import("microsoft-cognitiveservices-speech-sdk");
-      const result = await s.speakTextAsync(text);
-      if (id !== run.current) return;
-      if (result.reason === SDK.ResultReason.Canceled) {
-        setError(result.errorDetails || "The presenter could not speak that.");
+      for (const chunk of chunks) {
+        if (!mine()) return;
+        setSection(chunk.section);
+        const result = await s.speakTextAsync(chunk.text);
+        if (!mine()) return;
+        if (result.reason === SDK.ResultReason.Canceled) {
+          setError(result.errorDetails || "The presenter could not speak that.");
+          break;
+        }
       }
-      setPhase("ready");
     } catch (e) {
-      if (id !== run.current) return;
+      if (!mine()) return;
       setError(e instanceof Error ? e.message : String(e));
-      setPhase("ready");
     }
+    if (!mine()) return;
+    setSection(null);
+    setPhase("ready");
   }, []);
 
   const stopSpeaking = useCallback(async () => {
+    const id = run.current;
+    const turn = ++spoken.current;
     try {
       await synth.current?.stopSpeakingAsync();
     } catch {
       /* nothing was playing */
     }
+    if (id !== run.current || turn !== spoken.current) return;
+    setSection(null);
+    setPhase((p) => (p === "speaking" ? "ready" : p));
   }, []);
 
-  return { phase, error, start, speak, stopSpeaking, end };
+  return { phase, error, section, start, speak, stopSpeaking, end };
 }
