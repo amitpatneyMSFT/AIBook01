@@ -37,7 +37,7 @@
     "mammoth": "^1.12.2",
     "microsoft-cognitiveservices-speech-sdk": "^1.52.0",
     "nanoid": "^6.0.1",
-    "next": "15.5.25",
+    "next": "15.5.27",
     "openai": "^7.15.0",
     "pptxgenjs": "^4.0.1",
     "react": "19.1.0",
