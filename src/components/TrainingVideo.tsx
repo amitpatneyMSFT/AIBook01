@@ -14,7 +14,12 @@ import type {
   TrainingSection,
 } from "@/lib/types";
 import { WORDS_PER_MINUTE } from "@/lib/voices";
-import { AVATAR_PRESETS, BACKGROUNDS, MAX_AVATAR_MINUTES } from "@/lib/avatars";
+import {
+  AVATAR_PRESETS,
+  BACKGROUNDS,
+  MAX_AVATAR_MINUTES,
+  PRESENTER_ENTRIES,
+} from "@/lib/avatars";
 import {
   GESTURE_NONE,
   gestureCatalog,
@@ -912,7 +917,7 @@ export default function TrainingVideo({
                       key={String(photo)}
                       label={photo ? "Talking heads" : "Full body"}
                     >
-                      {Object.entries(AVATAR_PRESETS)
+                      {PRESENTER_ENTRIES
                         .filter(([, p]) => !!p.photo === photo)
                         .map(([key, p]) => (
                           <option key={key} value={key}>

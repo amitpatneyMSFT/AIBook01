@@ -7,7 +7,7 @@ import {
   getBearerTokenProvider,
   type TokenCredential,
 } from "@azure/identity";
-import { DEFAULT_PHOTO_MODEL } from "./avatars";
+import { BATCH_PHOTO_MODELS, DEFAULT_PHOTO_MODEL } from "./avatars";
 
 /**
  * Azure Speech "Text to Speech Avatar" batch synthesis — the Foundry model
@@ -170,6 +170,12 @@ export async function submitAvatarJob(
   ssml: string,
   opts: AvatarJobOptions,
 ): Promise<AvatarJob> {
+  const photoModel = opts.photoModel ?? DEFAULT_PHOTO_MODEL;
+  if (opts.photo && !(BATCH_PHOTO_MODELS as readonly string[]).includes(photoModel)) {
+    throw new Error(
+      `${photoModel} avatars are not supported by batch synthesis yet. Choose another presenter.`,
+    );
+  }
   const image = process.env.AZURE_AVATAR_BACKGROUND_URL?.trim();
   const body = {
     description: opts.description?.slice(0, 200),
@@ -179,7 +185,7 @@ export async function submitAvatarJob(
       talkingAvatarCharacter: opts.character,
       ...(opts.style ? { talkingAvatarStyle: opts.style } : {}),
       ...(opts.photo
-        ? { photoAvatarBaseModel: opts.photoModel ?? DEFAULT_PHOTO_MODEL }
+        ? { photoAvatarBaseModel: photoModel }
         : {}),
       ...(opts.transparent
         ? {

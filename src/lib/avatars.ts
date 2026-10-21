@@ -28,6 +28,16 @@ export type PhotoModel = "vasa-1" | "vasa-2";
 
 export const DEFAULT_PHOTO_MODEL: PhotoModel = "vasa-1";
 
+/**
+ * Photo models the batch synthesis API accepts. Microsoft's docs say it does
+ * not support vasa-2 yet; add it here once it does and those presenters appear
+ * in the pickers and are submitted.
+ */
+export const BATCH_PHOTO_MODELS: readonly PhotoModel[] = ["vasa-1"];
+
+export const batchSupported = (p: AvatarPreset): boolean =>
+  !p.photo || BATCH_PHOTO_MODELS.includes(p.photoModel ?? DEFAULT_PHOTO_MODEL);
+
 /** The presenter's own name, e.g. "Lisa" from "Lisa · casual, seated". */
 export const presenterName = (label: string): string => label.split(" · ")[0];
 
@@ -40,9 +50,9 @@ export const presenterName = (label: string): string => label.split(" · ")[0];
  * The "head-" entries are the standard talking-head (photo) avatars. They
  * render head-only through a VASA model, so they are submitted with
  * photoAvatarBaseModel: 30 use VASA-1 and the four newer, more expressive
- * ones use VASA-2. VASA-2 is in preview, limited to a few regions, and
- * Microsoft's docs say batch synthesis does not support it yet, so those jobs
- * may be rejected until the service enables it.
+ * ones use VASA-2. VASA-2 is in preview and Microsoft's docs say batch
+ * synthesis does not support it yet, so those presets stay defined but are
+ * hidden from the pickers and never submitted (see BATCH_PHOTO_MODELS).
  *
  * Jeff is absent because Microsoft retires him in December 2026 and no longer
  * lists his styles.
@@ -433,8 +443,16 @@ export const avatarPicture = (key: string): string =>
 
 export const DEFAULT_PRESENTER = "lisa-casual";
 
+/** Presenters that can be rendered today; what the pickers offer. */
+export const PRESENTER_ENTRIES = Object.entries(AVATAR_PRESETS).filter(([, p]) =>
+  batchSupported(p),
+);
+
 export function presenter(key?: string): { key: string; preset: AvatarPreset } {
-  const k = key && AVATAR_PRESETS[key] ? key : DEFAULT_PRESENTER;
+  const k =
+    key && AVATAR_PRESETS[key] && batchSupported(AVATAR_PRESETS[key])
+      ? key
+      : DEFAULT_PRESENTER;
   return { key: k, preset: AVATAR_PRESETS[k] };
 }
 

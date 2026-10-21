@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { AVATAR_PRESETS, avatarPicture } from "@/lib/avatars";
+import {
+  AVATAR_PRESETS,
+  DEFAULT_PRESENTER,
+  PRESENTER_ENTRIES,
+  avatarPicture,
+  presenter,
+} from "@/lib/avatars";
 import {
   HD_ALTERNATES,
   hdCandidates,
@@ -74,5 +80,13 @@ describe("presenter roster", () => {
     const heads = Object.values(AVATAR_PRESETS).filter((p) => p.photo);
     expect(heads.filter((p) => p.photoModel === "vasa-2")).toHaveLength(4);
     expect(heads.filter((p) => !p.photoModel)).toHaveLength(30);
+  });
+
+  it("keeps VASA-2 presenters out of the pickers until batch supports them", () => {
+    const offered = PRESENTER_ENTRIES.map(([, p]) => p);
+    expect(offered.filter((p) => p.photoModel === "vasa-2")).toHaveLength(0);
+    expect(offered.filter((p) => p.photo)).toHaveLength(30);
+    expect(presenter("head-leonie").key).toBe(DEFAULT_PRESENTER);
+    expect(presenter("head-adrian").key).toBe("head-adrian");
   });
 });

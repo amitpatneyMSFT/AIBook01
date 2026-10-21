@@ -215,12 +215,11 @@ neural voice. The voice picker lists the en-US voices from the Speech `voices/li
 API (cached for 24 hours; a built-in list is used if the service is unreachable),
 including HD and preview MAI voices. Voices with speaking styles offer a style
 menu, and a Sample button plays a short clip of the chosen voice and style. Styles
-that measurably do nothing are hidden. The 34 talking-head (photo) avatars are
-offered too: 30 run on Microsoft's VASA-1 model and four (Leonie, Leonie
-Professional, George and Marcel) on the newer VASA-2. VASA-2 is in preview, is
-limited to West US 2, Central India, Southeast Asia and Sweden Central, and
-Microsoft's docs say batch synthesis does not support it yet, so those renders
-may be rejected until the service enables it. Jeff is left out because Microsoft
+that measurably do nothing are hidden. The 30 VASA-1 talking-head (photo) avatars
+are offered too. Four newer VASA-2 avatars (Leonie, Leonie Professional, George
+and Marcel) are defined but hidden and blocked, because Microsoft's docs say batch
+synthesis does not support `vasa-2` yet; add `"vasa-2"` to `BATCH_PHOTO_MODELS`
+in `src/lib/avatars.ts` once it does. Jeff is left out because Microsoft
 retires him in December 2026.
 
 ## Limits and behavior
