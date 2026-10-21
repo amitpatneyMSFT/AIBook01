@@ -224,11 +224,13 @@ retires him in December 2026.
 
 ### Live VASA-2 presenter
 
-The four VASA-2 avatars can be used today through **Training video > Options >
-Live > Try a live VASA-2 presenter**. It streams the avatar in your browser over
-WebRTC with the Speech SDK (real-time synthesis, which supports `vasa-2`), so it
-does not use batch synthesis. Pick a presenter and voice, press **Start session**,
-type text and press **Speak**.
+The four VASA-2 avatars can be used today through the training video editor:
+open a generated training video and choose **Script > Preview live (VASA-2)**.
+It streams the avatar in your browser over WebRTC with the Speech SDK (real-time
+synthesis, which supports `vasa-2`), so it does not use batch synthesis. Pick a
+presenter and voice, press **Start session**, then **Play transcript** (or **Play
+from here** on any section). The presenter speaks the transcript the app wrote,
+including your edits, so nothing needs typing.
 
 - Live only: nothing is recorded, saved or added to a training video, and the
   background cannot be transparent.

@@ -1,24 +1,43 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AVATAR_PRESETS, LIVE_PRESENTERS, avatarPicture } from "@/lib/avatars";
+import { liveChunks } from "@/lib/livescript";
 import { PINNED_VOICES } from "@/lib/voices";
+import { voiceServiceName } from "@/lib/voicecatalog";
 import { useDialog } from "./useDialog";
 import { useLivePresenter } from "./useLivePresenter";
 
-const MAX_CHARS = 1000;
-
 type Status = { ready: boolean; region?: string; problem?: string };
 
-export default function LivePresenterModal({ onClose }: { onClose: () => void }) {
+/**
+ * A live VASA-2 presenter that speaks the training transcript. The words come
+ * from the transcript the app wrote (and the user edited), never from typing.
+ */
+export default function LivePresenterModal({
+  sections,
+  voice: transcriptVoice,
+  onClose,
+}: {
+  sections: { title: string; text: string }[];
+  /** The training video's voice, offered first. */
+  voice?: string;
+  onClose: () => void;
+}) {
   const { dialogRef, backdropProps } = useDialog(onClose);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const live = useLivePresenter(videoRef, audioRef);
   const [status, setStatus] = useState<Status | null>(null);
   const [key, setKey] = useState(LIVE_PRESENTERS[0][0]);
-  const [voice, setVoice] = useState(AVATAR_PRESETS[LIVE_PRESENTERS[0][0]].voice);
-  const [text, setText] = useState("");
+  const startVoice = transcriptVoice ?? AVATAR_PRESETS[LIVE_PRESENTERS[0][0]].voice;
+  const [voice, setVoice] = useState(startVoice);
+  const chunks = useMemo(() => liveChunks(sections), [sections]);
+  const sectionRefs = useRef<(HTMLLIElement | null)[]>([]);
+
+  useEffect(() => {
+    sectionRefs.current[live.section ?? -1]?.scrollIntoView?.({ block: "nearest" });
+  }, [live.section]);
 
   useEffect(() => {
     let alive = true;
@@ -37,10 +56,13 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
   const connected = live.phase === "ready" || live.phase === "speaking";
   const busy = live.phase === "connecting";
 
-  const pick = (k: string) => {
-    setKey(k);
-    setVoice(AVATAR_PRESETS[k].voice);
-  };
+  const pick = (k: string) => setKey(k);
+  const voiceOptions = useMemo(() => {
+    const names = Object.keys(PINNED_VOICES);
+    return names.includes(startVoice) ? names : [startVoice, ...names];
+  }, [startVoice]);
+  const play = (from: number) =>
+    void live.speak(chunks.filter((c) => c.section >= from));
 
   return (
     <div
@@ -61,8 +83,8 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
               Live presenter
             </h2>
             <p className="text-[11px] text-[var(--muted)]">
-              A VASA-2 talking head (preview) that speaks what you type, live. Nothing is recorded
-              or saved, and it is billed per minute while connected.
+              A VASA-2 talking head (preview) that speaks this training transcript, live. Nothing
+              is recorded or saved, and it is billed per minute while connected.
             </p>
           </div>
           <button aria-label="Close" className="btn !px-2.5 !py-1.5 !text-xs" onClick={onClose}>
@@ -118,9 +140,9 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
               disabled={connected || busy}
               onChange={(e) => setVoice(e.target.value)}
             >
-              {Object.keys(PINNED_VOICES).map((v) => (
+              {voiceOptions.map((v) => (
                 <option key={v} value={v}>
-                  {v}
+                  {v === startVoice && !PINNED_VOICES[v] ? "Training voice" : v}
                 </option>
               ))}
             </select>
@@ -147,15 +169,40 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
             )}
           </div>
 
-          <textarea
-            className="min-h-24 w-full resize-y rounded-xl border border-[var(--border)] bg-well p-3 text-[13px] text-[var(--fg)] outline-none focus:border-focus"
-            aria-label="What the presenter should say"
-            placeholder="Type what the presenter should say…"
-            maxLength={MAX_CHARS}
-            value={text}
-            disabled={!connected}
-            onChange={(e) => setText(e.target.value)}
-          />
+          <ol
+            aria-label="Transcript"
+            className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-[var(--border)] bg-well p-2"
+          >
+            {sections.map((s, i) => (
+              <li
+                key={i}
+                ref={(el) => {
+                  sectionRefs.current[i] = el;
+                }}
+                aria-current={live.section === i ? "true" : undefined}
+                className={`rounded-lg px-2.5 py-1.5 text-[13px] leading-snug ${
+                  live.section === i ? "bg-[var(--accent)]/15" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 flex-1 truncate text-[11px] font-semibold tracking-wide text-[var(--muted)] uppercase">
+                    {s.title || `Section ${i + 1}`}
+                  </span>
+                  {connected && (
+                    <button
+                      className="btn !px-2 !py-0.5 !text-[11px]"
+                      disabled={live.phase === "speaking"}
+                      aria-label={`Play from ${s.title || `section ${i + 1}`}`}
+                      onClick={() => play(i)}
+                    >
+                      Play from here
+                    </button>
+                  )}
+                </div>
+                <p className="mt-0.5 line-clamp-2 text-[var(--fg)]">{s.text}</p>
+              </li>
+            ))}
+          </ol>
 
           {live.error && (
             <p role="alert" className="text-[13px] leading-snug text-red-300">
@@ -167,8 +214,8 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
             {!connected ? (
               <button
                 className="btn btn-primary"
-                disabled={!status?.ready || busy}
-                onClick={() => void live.start(preset.character, PINNED_VOICES[voice] ?? voice)}
+                disabled={!status?.ready || busy || !chunks.length}
+                onClick={() => void live.start(preset.character, voiceServiceName(voice))}
               >
                 {busy ? "Connecting…" : "Start session"}
               </button>
@@ -176,17 +223,17 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
               <>
                 <button
                   className="btn btn-primary"
-                  disabled={live.phase === "speaking" || !text.trim()}
-                  onClick={() => void live.speak(text)}
+                  disabled={live.phase === "speaking"}
+                  onClick={() => play(0)}
                 >
-                  Speak
+                  Play transcript
                 </button>
                 <button
                   className="btn"
                   disabled={live.phase !== "speaking"}
                   onClick={() => void live.stopSpeaking()}
                 >
-                  Stop speaking
+                  Stop
                 </button>
                 <button className="btn" onClick={() => void live.end()}>
                   End session
@@ -194,7 +241,8 @@ export default function LivePresenterModal({ onClose }: { onClose: () => void })
               </>
             )}
             <span className="ml-auto text-[10px] text-[var(--muted)]">
-              {text.length}/{MAX_CHARS} · sessions end after 5 idle minutes or 30 minutes total
+              {sections.length} section{sections.length === 1 ? "" : "s"} · sessions end after 5
+              idle minutes or 30 minutes total
               {status?.region ? ` · ${status.region}` : ""}
             </span>
           </div>

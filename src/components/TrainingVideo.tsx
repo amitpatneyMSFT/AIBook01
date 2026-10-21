@@ -62,6 +62,7 @@ import NarrationOptions from "./NarrationOptions";
 import TrainingCueEditor from "./TrainingCueEditor";
 import TrainingDesign from "./TrainingDesign";
 import PresenterGallery from "./PresenterGallery";
+import LivePresenterModal from "./LivePresenterModal";
 import TrainingPreview from "./TrainingPreview";
 import VoicePicker from "./VoicePicker";
 import type { VisualContext } from "./TrainingVisual";
@@ -179,6 +180,7 @@ export default function TrainingVideo({
   const [draft, setDraft] = useState<Draft>(() => toDraft(content));
   const [dirty, setDirty] = useState(false);
   const [gallery, setGallery] = useState(false);
+  const [liveOpen, setLiveOpen] = useState(false);
   const [busy, setBusy] = useState<
     "save" | "render" | "plan" | "pictures" | null
   >(null);
@@ -934,6 +936,21 @@ export default function TrainingVideo({
                 >
                   Compare presenters
                 </button>
+                <button
+                  className="btn !text-[11px]"
+                  title="A live VASA-2 talking head speaks this transcript"
+                  disabled={!draft.sections.length}
+                  onClick={() => setLiveOpen(true)}
+                >
+                  Preview live (VASA-2)
+                </button>
+                {liveOpen && (
+                  <LivePresenterModal
+                    sections={draft.sections}
+                    voice={draft.voice}
+                    onClose={() => setLiveOpen(false)}
+                  />
+                )}
                 {gallery && (
                   <PresenterGallery
                     current={draft.presenter}
