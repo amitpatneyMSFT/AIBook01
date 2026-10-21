@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AVATAR_PRESETS, avatarPicture, presenterName } from "@/lib/avatars";
+import {
+  AVATAR_PRESETS,
+  PRESENTER_ENTRIES,
+  avatarPicture,
+  presenterName,
+} from "@/lib/avatars";
 import { HD_ALTERNATES, hdCandidates, PINNED_VOICES } from "@/lib/voices";
 import type { CatalogVoice } from "@/lib/voicecatalog";
 import { loadVoices } from "./VoicePicker";
 import { useDialog } from "./useDialog";
 
-const entries = Object.entries(AVATAR_PRESETS);
+const entries = PRESENTER_ENTRIES;
 
 /**
  * Every presenter at a glance, each with a sample of the voice it comes with,

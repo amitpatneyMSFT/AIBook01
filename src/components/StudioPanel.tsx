@@ -80,6 +80,7 @@ import {
   BACKGROUNDS,
   DEFAULT_BACKGROUND,
   DEFAULT_PRESENTER,
+  PRESENTER_ENTRIES,
   avatarPicture,
 } from "@/lib/avatars";
 
@@ -1139,7 +1140,7 @@ export default function StudioPanel({
                           key={String(photo)}
                           label={photo ? "Talking heads" : "Full body"}
                         >
-                          {Object.entries(AVATAR_PRESETS)
+                          {PRESENTER_ENTRIES
                             .filter(([, p]) => !!p.photo === photo)
                             .map(([key, p]) => (
                               <option key={key} value={key}>
