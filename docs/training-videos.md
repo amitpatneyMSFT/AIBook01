@@ -233,8 +233,11 @@ type text and press **Speak**.
 - Live only: nothing is recorded, saved or added to a training video, and the
   background cannot be transparent.
 - The server hands the browser a short-lived Speech token and a relay server
-  (`/api/live-presenter`); keys and Entra tokens never reach the page. With Entra,
-  `AZURE_SPEECH_RESOURCE_ID` is required, as for audio overviews.
+  (`/api/live-presenter`). The server exchanges its own credential (the key, or
+  its Entra token) for that short-lived Speech token and returns only the
+  exchanged token, so keys and Entra tokens never reach the page. With Entra, set
+  `AZURE_SPEECH_RESOURCE_ID` (or `AZURE_SPEECH_ENDPOINT`) so the server can reach
+  the resource's endpoint.
 - `AZURE_SPEECH_REGION` must be West US 2, Central India, Southeast Asia or
   Sweden Central, the only regions Microsoft lists for `vasa-2` (preview). The
   panel says so when it is not.

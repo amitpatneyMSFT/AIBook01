@@ -69,6 +69,42 @@ describe("live presenter session", () => {
     expect(seen.some((u) => u.includes("westus2.tts.speech.microsoft.com"))).toBe(true);
   });
 
+  it("exchanges the Entra token server-side and never returns it", async () => {
+    vi.resetModules();
+    vi.doMock("@/lib/avatarbatch", async (orig) => ({
+      ...(await orig<typeof import("@/lib/avatarbatch")>()),
+      avatarConfigured: () => true,
+      speechKeyAuth: () => undefined,
+      speechEndpoint: () => "https://acct.cognitiveservices.azure.com",
+      speechBearerToken: async () => "entra-secret",
+      speechHeaders: async () => ({ Authorization: "Bearer entra-secret" }),
+    }));
+    try {
+      const { startLiveSession: start } = await import("@/lib/livepresenter");
+      process.env.AZURE_SPEECH_REGION = "westus2";
+      process.env.DAILY_BUDGET_USD = "0";
+      const calls: { url: string; init?: RequestInit }[] = [];
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (url: string, init?: RequestInit) => {
+          calls.push({ url: String(url), init });
+          if (String(url).includes("issueToken")) return new Response("short-lived-tok");
+          return Response.json({ Urls: ["turn:relay.example:3478"], Username: "u", Password: "p" });
+        }),
+      );
+      const s = await start();
+      expect(s.token).toBe("short-lived-tok");
+      expect(JSON.stringify(s)).not.toContain("entra-secret");
+      const sts = calls.find((c) => c.url.includes("issueToken"));
+      expect(sts?.url).toBe("https://acct.cognitiveservices.azure.com/sts/v1.0/issueToken");
+      expect(sts?.init?.method).toBe("POST");
+      expect((sts?.init?.headers as Record<string, string>).Authorization).toBe("Bearer entra-secret");
+    } finally {
+      vi.doUnmock("@/lib/avatarbatch");
+      vi.resetModules();
+    }
+  });
+
   it("refuses to start in an unsupported region", async () => {
     process.env.AZURE_SPEECH_KEY = "k";
     process.env.AZURE_SPEECH_REGION = "eastus2";

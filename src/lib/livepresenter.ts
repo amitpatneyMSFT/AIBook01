@@ -11,8 +11,9 @@ import {
 
 /**
  * Live avatar sessions: the browser streams the avatar over WebRTC with the
- * Speech SDK. The server only hands it short-lived credentials, so keys and
- * Entra tokens never reach the page.
+ * Speech SDK. The server exchanges its key or Entra credential for a
+ * short-lived Speech token and returns only that, so keys and Entra tokens
+ * never reach the page.
  */
 
 export type LiveStatus = { ready: boolean; region?: string; problem?: string };
@@ -58,14 +59,20 @@ async function speechToken(region: string): Promise<string> {
     if (!res.ok) throw new Error(`Azure Speech refused to issue a token (${res.status}).`);
     return (await res.text()).trim();
   }
-  const resourceId = process.env.AZURE_SPEECH_RESOURCE_ID?.trim();
-  if (!resourceId) {
+  const endpoint = speechEndpoint()?.replace(/\/+$/, "");
+  if (!endpoint) {
     throw new LiveUnavailableError(
-      "Live avatars with Entra sign-in need AZURE_SPEECH_RESOURCE_ID (the full /subscriptions/.../accounts/<name> id), or use AZURE_SPEECH_KEY.",
+      "Live avatars with Entra sign-in need AZURE_SPEECH_RESOURCE_ID (the full /subscriptions/.../accounts/<name> id) or AZURE_SPEECH_ENDPOINT, or use AZURE_SPEECH_KEY.",
     );
   }
-  // The Speech SDK takes an Entra token in this form, paired with the resource.
-  return `aad#${resourceId}#${await speechBearerToken()}`;
+  // Exchange the broad Entra bearer for a short-lived Speech token here, so
+  // only the narrow token ever reaches the browser.
+  const res = await fetch(`${endpoint}/sts/v1.0/issueToken`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${await speechBearerToken()}` },
+  });
+  if (!res.ok) throw new Error(`Azure Speech refused to issue a token (${res.status}).`);
+  return (await res.text()).trim();
 }
 
 function relayUrl(region: string): string {
