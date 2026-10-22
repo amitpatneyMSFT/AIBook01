@@ -11,6 +11,7 @@
  * Pure and client-safe, so it can be tested and run live in the editor.
  */
 import { WORDS_PER_MINUTE } from "./voices";
+import { AVATAR_PRESETS } from "./avatars";
 import type { TrainingSection } from "./types";
 import {
   compositionPalette,
@@ -169,32 +170,53 @@ export type AvatarPose = { cx: number; cy: number; scale: number; opacity: numbe
 
 export const PRESENTER_POSE: AvatarPose = { cx: 0.5, cy: 0.5, scale: 1, opacity: 1 };
 
-/** Presenter size beside a visual; cy = 1 - scale / 2 keeps the shoulders on the bottom edge. */
-const SIDE_SCALE = 0.5;
+/**
+ * Talking heads (photo avatars) fill their whole frame with a face, so they
+ * are drawn smaller than full-body presenters.
+ */
+const HEAD_SIDE_SCALE = 0.42;
+const HEAD_PIP_FACTOR = 0.55;
 
 export function layoutGeometry(
   layout: TrainingLayout,
   comp: Pick<TrainingComposition, "captions" | "pipCorner" | "pipSize">,
-  cueId = ""
+  cueId = "",
+  head = false
 ): { avatar: AvatarPose; panel: Rect | null } {
   const bottom = comp.captions === "burned" ? 0.84 : 0.92;
   switch (layout) {
     case "side-left":
       return {
-        avatar: { cx: 0.18, cy: 0.75, scale: SIDE_SCALE, opacity: 1 },
-        panel: { x: 0.36, y: 0.08, w: 0.61, h: round(bottom - 0.08) },
+        avatar: head
+          ? { cx: 0.22, cy: round(1 - HEAD_SIDE_SCALE / 2), scale: HEAD_SIDE_SCALE, opacity: 1 }
+          : { cx: 0.2, cy: 0.56, scale: 0.88, opacity: 1 },
+        panel: { x: 0.4, y: 0.08, w: 0.57, h: round(bottom - 0.08) },
       };
     case "side-right":
       return {
-        avatar: { cx: 0.82, cy: 0.75, scale: SIDE_SCALE, opacity: 1 },
-        panel: { x: 0.03, y: 0.08, w: 0.61, h: round(bottom - 0.08) },
+        avatar: head
+          ? { cx: 0.78, cy: round(1 - HEAD_SIDE_SCALE / 2), scale: HEAD_SIDE_SCALE, opacity: 1 }
+          : { cx: 0.8, cy: 0.56, scale: 0.88, opacity: 1 },
+        panel: { x: 0.03, y: 0.08, w: 0.57, h: round(bottom - 0.08) },
       };
     case "pip": {
       const { corner, size } = resolvePip(comp, cueId);
-      const scale = PIP_SCALES[size];
-      const grow = (scale - PIP_SCALES.medium) * 0.5;
       const right = corner.endsWith("right");
       const low = corner.startsWith("bottom");
+      if (head) {
+        const s = round(PIP_SCALES[size] * HEAD_PIP_FACTOR);
+        return {
+          avatar: {
+            cx: round(right ? 0.98 - s / 2 : 0.02 + s / 2),
+            cy: round(low ? 1 - s / 2 : 0.03 + s / 2),
+            scale: s,
+            opacity: 1,
+          },
+          panel: { x: 0.03, y: 0.05, w: 0.94, h: round(bottom - 0.05) },
+        };
+      }
+      const scale = PIP_SCALES[size];
+      const grow = (scale - PIP_SCALES.medium) * 0.5;
       return {
         avatar: {
           cx: round(right ? 0.88 - grow : 0.12 + grow),
@@ -238,6 +260,8 @@ export type ComposeInput = {
   objectives: string[];
   sections: TrainingSection[];
   composition: TrainingComposition;
+  /** The presenter is a talking head, which is drawn smaller than a full body. */
+  head?: boolean;
 };
 
 /** The parts of a training artifact the timeline and the rasters depend on. */
@@ -247,12 +271,14 @@ export const composeInputOf = (c: {
   objectives?: string[];
   sections: TrainingSection[];
   composition?: unknown;
+  presenter?: string;
 }): ComposeInput => ({
   title: c.title,
   description: c.description,
   objectives: c.objectives ?? [],
   sections: c.sections,
   composition: normalizeComposition(c.composition),
+  head: !!(c.presenter && AVATAR_PRESETS[c.presenter]?.photo),
 });
 
 export type RasterJob = {
@@ -558,7 +584,7 @@ export function compileTrainingTimeline(
     placed.forEach((p, k) => {
       const cueStart = start + Math.min(p.t, Math.max(0, duration - 0.2));
       const cueEnd = Math.min(end, k + 1 < placed.length ? start + placed[k + 1].t : end);
-      const { avatar: nextPose, panel } = layoutGeometry(p.cue.layout, c, p.cue.id);
+      const { avatar: nextPose, panel } = layoutGeometry(p.cue.layout, c, p.cue.id, input.head);
       setPose(cueStart, p.cue.kind === "presenter" ? PRESENTER_POSE : nextPose);
       if (p.cue.kind === "presenter") return;
 
@@ -620,7 +646,7 @@ export function compileTrainingTimeline(
     );
     // Name the presenter beside them, and not at all while they are in a corner or off screen.
     const p = sampleAvatar(avatar, start);
-    if (end - start >= 1.5 && p.opacity > 0.5 && p.scale >= SIDE_SCALE) {
+    if (end - start >= 1.5 && p.opacity > 0.5 && p.scale > 0.6) {
       const right = p.cx > 0.6;
       lowerThird = {
         start,
