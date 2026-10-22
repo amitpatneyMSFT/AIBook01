@@ -254,6 +254,20 @@ describe("timeline", () => {
     expect(atSection.scale).toBeCloseTo(1, 2);
   });
 
+  it("draws talking heads smaller than full-body presenters and keeps them on screen", () => {
+    for (const layout of ["side-left", "side-right", "pip"] as const) {
+      for (const pipSize of ["small", "medium", "large"] as const) {
+        const c = { ...comp(), pipSize, pipCorner: "bottom-left" as const };
+        const body = layoutGeometry(layout, c).avatar;
+        const head = layoutGeometry(layout, c, "", true).avatar;
+        expect(head.scale).toBeLessThan(body.scale);
+        expect(head.cx - head.scale / 2).toBeGreaterThanOrEqual(-0.001);
+        expect(head.cx + head.scale / 2).toBeLessThanOrEqual(1.001);
+        expect(head.cy + head.scale / 2).toBeLessThanOrEqual(1.001);
+      }
+    }
+  });
+
   it("keeps cues apart and warns about missing anchors", () => {
     const i = input();
     i.sections[1].cues = [

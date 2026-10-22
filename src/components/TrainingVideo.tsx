@@ -636,6 +636,7 @@ export default function TrainingVideo({
           .filter(Boolean),
         sections: draft.sections,
         composition: draft.composition,
+        presenter: draft.presenter,
         description: content.description,
       }),
     [draft, content.description],
