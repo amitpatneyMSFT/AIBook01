@@ -169,6 +169,9 @@ export type AvatarPose = { cx: number; cy: number; scale: number; opacity: numbe
 
 export const PRESENTER_POSE: AvatarPose = { cx: 0.5, cy: 0.5, scale: 1, opacity: 1 };
 
+/** Presenter size beside a visual; cy = 1 - scale / 2 keeps the shoulders on the bottom edge. */
+const SIDE_SCALE = 0.5;
+
 export function layoutGeometry(
   layout: TrainingLayout,
   comp: Pick<TrainingComposition, "captions" | "pipCorner" | "pipSize">,
@@ -178,13 +181,13 @@ export function layoutGeometry(
   switch (layout) {
     case "side-left":
       return {
-        avatar: { cx: 0.2, cy: 0.56, scale: 0.88, opacity: 1 },
-        panel: { x: 0.4, y: 0.08, w: 0.57, h: round(bottom - 0.08) },
+        avatar: { cx: 0.18, cy: 0.75, scale: SIDE_SCALE, opacity: 1 },
+        panel: { x: 0.36, y: 0.08, w: 0.61, h: round(bottom - 0.08) },
       };
     case "side-right":
       return {
-        avatar: { cx: 0.8, cy: 0.56, scale: 0.88, opacity: 1 },
-        panel: { x: 0.03, y: 0.08, w: 0.57, h: round(bottom - 0.08) },
+        avatar: { cx: 0.82, cy: 0.75, scale: SIDE_SCALE, opacity: 1 },
+        panel: { x: 0.03, y: 0.08, w: 0.61, h: round(bottom - 0.08) },
       };
     case "pip": {
       const { corner, size } = resolvePip(comp, cueId);
@@ -617,7 +620,7 @@ export function compileTrainingTimeline(
     );
     // Name the presenter beside them, and not at all while they are in a corner or off screen.
     const p = sampleAvatar(avatar, start);
-    if (end - start >= 1.5 && p.opacity > 0.5 && p.scale > 0.6) {
+    if (end - start >= 1.5 && p.opacity > 0.5 && p.scale >= SIDE_SCALE) {
       const right = p.cx > 0.6;
       lowerThird = {
         start,
