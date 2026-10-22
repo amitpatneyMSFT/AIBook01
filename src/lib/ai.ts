@@ -355,6 +355,17 @@ export function getClient(): OpenAI | AzureOpenAI {
   return client;
 }
 
+/** The SDK reports an unreachable host as a bare "Connection error." with no status. */
+export function isConnectionError(e: unknown): boolean {
+  const msg = e instanceof Error ? e.message : String(e);
+  const code = (e as { code?: string })?.code;
+  return (
+    code === "ECONNREFUSED" ||
+    code === "ENOTFOUND" ||
+    /connection error|fetch failed|ECONNREFUSED|ENOTFOUND/i.test(msg)
+  );
+}
+
 /** Turn provider failures into actionable setup guidance rather than a raw code. */
 export function describeAuthError(e: unknown): string | null {
   if (e instanceof StudioModelError) {
@@ -386,6 +397,12 @@ export function describeAuthError(e: unknown): string | null {
       } if it requires one.`;
     }
     return null;
+  }
+
+  if (isConnectionError(e)) {
+    return /YOUR-RESOURCE/i.test(endpoint ?? "")
+      ? `AZURE_OPENAI_ENDPOINT is still the placeholder "${endpoint}". Set it to your Azure OpenAI resource's endpoint in .env.local and restart the server.`
+      : `Could not reach Azure OpenAI at ${endpoint}. Check AZURE_OPENAI_ENDPOINT is correct, the resource is reachable from this machine (network, VPN, firewall), and restart the server after changing .env.local.`;
   }
 
   // A 404 here almost always means a misconfigured api-version or a deployment

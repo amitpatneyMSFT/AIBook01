@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { BudgetExceededError } from "./budget";
-import { MissingConfigError, describeAuthError } from "./ai";
+import { MissingConfigError, describeAuthError, isConnectionError } from "./ai";
 
 export function ok(data: unknown, init?: number) {
   return NextResponse.json(data, { status: init ?? 200 });
@@ -23,7 +23,7 @@ export function fail(e: unknown) {
         { status: 429 }
       );
     }
-    if (status === 404) {
+    if (status === 404 || isConnectionError(e)) {
       return NextResponse.json({ error: described, code: "config" }, { status: 502 });
     }
     return NextResponse.json({ error: described, code: "auth" }, { status: 401 });
