@@ -232,6 +232,8 @@ presenter and voice, press **Start session**, then **Play transcript** (or **Pla
 from here** on any section). The presenter speaks the transcript the app wrote,
 including your edits, so nothing needs typing.
 
+![Live presenter dialog with the four VASA-2 avatars Leonie, Leonie Professional, George and Marcel, a voice picker, a video area and the transcript](screenshots/live-presenter.png)
+
 - Live only: nothing is recorded, saved or added to a training video, and the
   background cannot be transparent.
 - The server hands the browser a short-lived Speech token and a relay server
