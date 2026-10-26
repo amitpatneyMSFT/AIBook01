@@ -67,3 +67,9 @@ download the MP4. Watch the [3:37 sample](https://github.com/user-attachments/as
 or read [Training videos](training-videos.md).
 
 ![Finished training video playing above the editable transcript, with presenter settings and a Render again button](screenshots/training-editor.png)
+
+**Preview live (VASA-2)** in the script editor opens a live presenter: pick one
+of four VASA-2 avatars and a voice, then have it speak the transcript. See
+[Live VASA-2 presenter](training-videos.md#live-vasa-2-presenter).
+
+![Live presenter dialog with the four VASA-2 avatars Leonie, Leonie Professional, George and Marcel, a voice picker, a video area and the transcript](screenshots/live-presenter.png)

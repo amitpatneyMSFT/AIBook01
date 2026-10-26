@@ -47,6 +47,17 @@ https://github.com/user-attachments/assets/7651fdca-42dd-45e4-8e56-f56f07c3b6d9
 
 How it works, setup and costs: [Training videos](docs/training-videos.md).
 
+#### Live VASA-2 presenter (preview)
+
+Open a training video's script and choose **Preview live (VASA-2)** to have one
+of four VASA-2 talking-head avatars (Leonie, Leonie Professional, George or
+Marcel) speak the transcript in your browser, in real time. Nothing is recorded
+or added to the video. It needs an Azure Speech resource in West US 2, Central
+India, Southeast Asia or Sweden Central; see
+[Live VASA-2 presenter](docs/training-videos.md#live-vasa-2-presenter).
+
+![Live presenter dialog offering the four VASA-2 avatars Leonie, Leonie Professional, George and Marcel, a voice picker, a video area and the training transcript](docs/screenshots/live-presenter.png)
+
 ### Sample: a whiteboard video
 
 The 🎬 **Whiteboard video** generator plans a short scene-by-scene story from
