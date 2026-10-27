@@ -1,0 +1,33 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #f2f5f9; font-family: Inter, sans-serif; color: #0b0d10; }
+    #s2-head { position: absolute; left: 96px; top: 76px; font-size: 80px; line-height: 1; font-weight: 900; letter-spacing: -0.03em; white-space: nowrap; }
+    #s2-head .w { display: inline-block; }
+    #s2-head .a { color: #5a68ee; }
+    #s2-rows { position: absolute; left: 96px; top: 214px; }
+    #s2-rows .row { display: block; font-size: 104px; line-height: 1; font-weight: 900; letter-spacing: -0.03em; }
+    #s2-foot { position: absolute; left: 96px; top: 858px; font-size: 36px; font-weight: 700; color: #3a4352; white-space: nowrap; }
+    #s2-win { position: absolute; left: 1360px; top: 54px; width: 464px; height: 971px; border-radius: 14px; background: #12151a; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    #s2-win img { display: block; width: 464px; height: 971px; border-radius: 14px; }
+  </style>
+  <div data-hf-id="hf-rwdx" id="root" data-composition-id="s2-sources" data-width="1920" data-height="1080">
+    <h1 data-hf-id="hf-1hv7" id="s2-head"><span data-hf-id="hf-5os5" class="w">Drop</span> <span data-hf-id="hf-mtoy" class="w">anything</span> <span data-hf-id="hf-t5qc" class="w a">in.</span></h1>
+    <div data-hf-id="hf-ycwo" id="s2-rows"><span data-hf-id="hf-khd7" class="row">.PDF</span><span data-hf-id="hf-ok11" class="row">.DOCX</span><span data-hf-id="hf-tmlj" class="row">.PPTX</span><span data-hf-id="hf-j9px" class="row">.CSV</span><span data-hf-id="hf-51rq" class="row">.HTML</span><span data-hf-id="hf-1v8m" class="row">.MP4</span></div>
+    <p data-hf-id="hf-1ml4" id="s2-foot">+ ZIP, images, audio, video, URLs, YouTube, RSS</p>
+    <div data-hf-id="hf-jbdf" id="s2-win"><img data-hf-id="hf-mxy4" id="s2-img" src="assets/img/sources-panel.png" alt="Sources panel with a drop zone and four source cards" /></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#root", { clipPath: "inset(0% 100% 0% 0%)" }, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.55, ease: "power2.inOut" }, 0);
+    tl.fromTo("#s2-head .w", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, 0.5);
+    tl.fromTo("#s2-rows .row", { opacity: 0, x: -360, filter: "blur(14px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.4, stagger: 0.14, ease: "power4.out" }, 0.9);
+    tl.fromTo("#s2-win", { opacity: 0, x: 140 }, { opacity: 1, x: 0, duration: 0.6, ease: "expo.out" }, 1.0);
+    tl.fromTo("#s2-foot", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, 2.1);
+    tl.fromTo("#s2-img", { clipPath: "inset(0% 0% 62.4% 0%)" }, { clipPath: "inset(0% 0% 62.4% 0%)", duration: 0.01 }, 0);
+    tl.to("#s2-img", { clipPath: "inset(0% 0% 44.8% 0%)", duration: 0.3, ease: "expo.out" }, 2.4);
+    tl.to("#s2-img", { clipPath: "inset(0% 0% 29.9% 0%)", duration: 0.3, ease: "expo.out" }, 2.8);
+    tl.to("#s2-img", { clipPath: "inset(0% 0% 15% 0%)", duration: 0.3, ease: "expo.out" }, 3.2);
+    tl.to("#s2-img", { clipPath: "inset(0% 0% 0% 0%)", duration: 0.3, ease: "expo.out" }, 3.6);
+    window.__timelines["s2-sources"] = tl;
+  </script>
+</template>

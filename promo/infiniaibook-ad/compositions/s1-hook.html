@@ -1,0 +1,34 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #6f7dff; font-family: Inter, sans-serif; color: #0b0d10; }
+    #s1-win { position: absolute; left: 80px; top: 100px; width: 1098px; height: 894px; border-radius: 14px; overflow: hidden; background: #0e1116; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    #s1-win img { display: block; width: 1098px; height: 894px; }
+    #s1-chip { position: absolute; left: 468px; top: 186px; width: 40px; height: 40px; border-radius: 50%; border: 4px solid #ffd23f; background: rgba(255,210,63,.35); }
+    #s1-card { position: absolute; left: 80px; top: 589px; width: 937px; height: 86px; border-radius: 10px; border: 4px solid #ffd23f; }
+    #s1-title { position: absolute; left: 1250px; top: 290px; font-size: 80px; line-height: 1.04; font-weight: 900; letter-spacing: -0.03em; }
+    #s1-title .ln { display: block; white-space: nowrap; }
+    #s1-title .w { display: inline-block; }
+    #s1-cursor { position: absolute; left: 0; top: 0; width: 64px; height: 64px; }
+  </style>
+  <div data-hf-id="hf-hv3x" id="root" data-composition-id="s1-hook" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-h2io" id="s1-win"><img data-hf-id="hf-s6k1" src="assets/img/chat-answer.png" alt="Cited chat answer from the sample notebook" /><div data-hf-id="hf-kgys" id="s1-card"></div><div data-hf-id="hf-rt2c" id="s1-chip"></div></div>
+    <h1 data-hf-id="hf-f60y" id="s1-title"><span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-4q4b" class="w">Every</span> <span data-hf-id="hf-9rtg" class="w">claim</span></span><span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-x1cw" class="w">cites</span> <span data-hf-id="hf-1jo2" class="w">its</span></span><span data-hf-id="hf-ogei" class="ln"><span data-hf-id="hf-mz3w" class="w" id="s1-src">source.</span></span></h1>
+    <svg data-hf-id="hf-afm4" id="s1-cursor" viewBox="0 0 24 24"><path data-hf-id="hf-061l" d="M3 2 L3 19 L8 14.5 L11 21.5 L14 20.2 L11 13.5 L18 13 Z" fill="#fff" stroke="#0b0d10" stroke-width="1.6" stroke-linejoin="round" /></svg>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s1-win", { scale: 1.05, transformOrigin: "50% 50%" }, { scale: 1, duration: 1.1, ease: "expo.out" }, 0);
+    tl.fromTo("#s1-title .w", { opacity: 0.25, filter: "blur(6px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.4, stagger: 0.07, ease: "power2.out" }, 0);
+    tl.set("#s1-cursor", { x: 2100, y: 820 }, 0);
+    tl.set("#s1-chip", { scale: 0, transformOrigin: "50% 50%" }, 0);
+    tl.set("#s1-card", { clipPath: "inset(0 100% 0 0)" }, 0);
+    tl.to("#s1-cursor", { x: 560, y: 301, duration: 1.3, ease: "power2.inOut" }, 1.0);
+    tl.to("#s1-cursor", { scale: 0.84, duration: 0.07, ease: "power2.in", transformOrigin: "13% 8%" }, 2.32);
+    tl.to("#s1-cursor", { scale: 1, duration: 0.12, ease: "power2.out" }, 2.39);
+    tl.to("#s1-chip", { scale: 1, duration: 0.35, ease: "back.out(2.2)" }, 2.4);
+    tl.to("#s1-card", { clipPath: "inset(0 0% 0 0)", duration: 0.45, ease: "power3.out" }, 2.55);
+    tl.to("#s1-src", { color: "#ffffff", duration: 0.2, ease: "none" }, 2.6);
+    tl.to("#s1-cursor", { x: 790, y: 735, duration: 0.7, ease: "power2.out" }, 3.15);
+    window.__timelines["s1-hook"] = tl;
+  </script>
+</template>

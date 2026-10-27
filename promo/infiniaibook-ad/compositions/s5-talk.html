@@ -1,0 +1,43 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #ffd23f; font-family: Inter, sans-serif; color: #0b0d10; }
+    .s5-label { position: absolute; left: 96px; font-size: 44px; line-height: 1; font-weight: 700; white-space: nowrap; }
+    #s5-roller { position: absolute; left: 96px; top: 230px; width: 1728px; height: 320px; }
+    #s5-roller .rw { position: absolute; left: 0; top: 0; font-size: 300px; line-height: 1; font-weight: 900; letter-spacing: -0.045em; white-space: nowrap; }
+    #s5-sub { position: absolute; left: 100px; top: 600px; font-size: 72px; line-height: 1; font-weight: 900; letter-spacing: -0.03em; white-space: nowrap; }
+    #s5-b1 { position: absolute; left: 96px; top: 290px; font-size: 150px; line-height: 1; font-weight: 900; letter-spacing: -0.04em; white-space: nowrap; }
+    #s5-b2 { position: absolute; left: 100px; top: 480px; font-size: 110px; line-height: 1.02; font-weight: 900; letter-spacing: -0.035em; }
+    #s5-b2 .ln { display: block; white-space: nowrap; }
+    .s5-w { display: inline-block; }
+  </style>
+  <div data-hf-id="hf-uzpk" id="root" data-composition-id="s5-talk" data-width="1920" data-height="1080">
+    <p data-hf-id="hf-cvx6" id="s5-la" class="s5-label" style="top: 130px">Live discussions</p>
+    <div data-hf-id="hf-suve" id="s5-roller">
+      <span data-hf-id="hf-o0js" class="rw" id="s5-r0">Debate</span><span data-hf-id="hf-ooe6" class="rw" id="s5-r1">Q&amp;A</span><span data-hf-id="hf-uuk2" class="rw" id="s5-r2">Interview</span><span data-hf-id="hf-oh3v" class="rw" id="s5-r3">Quiz</span><span data-hf-id="hf-l9cr" class="rw" id="s5-r4">Tutor</span><span data-hf-id="hf-5dfi" class="rw" id="s5-r5">Discuss</span>
+    </div>
+    <p data-hf-id="hf-z2oe" id="s5-sub">Interrupt it. It cites sources.</p>
+    <p data-hf-id="hf-vnua" id="s5-lb" class="s5-label" style="top: 190px">Screen helper</p>
+    <h2 data-hf-id="hf-tete" id="s5-b1"><span data-hf-id="hf-rr48" class="s5-w">Share</span> <span data-hf-id="hf-vil8" class="s5-w">a</span> <span data-hf-id="hf-bny1" class="s5-w">window.</span></h2>
+    <h2 data-hf-id="hf-n93l" id="s5-b2"><span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-67lz" class="s5-w">Get</span> <span data-hf-id="hf-28bc" class="s5-w">coached</span></span><span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-vw0v" class="s5-w">one</span> <span data-hf-id="hf-9can" class="s5-w">step</span> <span data-hf-id="hf-bo1k" class="s5-w">at</span> <span data-hf-id="hf-8tlg" class="s5-w">a</span> <span data-hf-id="hf-xnv2" class="s5-w">time.</span></span></h2>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#root", { x: 1920, filter: "blur(20px)" }, { x: 0, filter: "blur(0px)", duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#s5-la", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, ease: "power2.out" }, 0.45);
+    for (let i = 0; i < 6; i++) {
+      const t = 0.7 + i * 0.32;
+      tl.set("#s5-r" + i, { opacity: 0 }, 0);
+      tl.fromTo("#s5-r" + i, { opacity: 0, y: 150, filter: "blur(12px)" }, { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.14, ease: "power3.out" }, t);
+      if (i < 5) tl.to("#s5-r" + i, { opacity: 0, y: -150, filter: "blur(12px)", duration: 0.1, ease: "power3.in" }, t + 0.22);
+    }
+    tl.fromTo("#s5-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, 2.65);
+    tl.to(["#s5-la", "#s5-r5", "#s5-sub"], { opacity: 0, filter: "blur(10px)", duration: 0.22, ease: "power3.in" }, 3.5);
+    tl.set(["#s5-lb", "#s5-b1", "#s5-b2"], { opacity: 0 }, 0);
+    tl.fromTo("#s5-lb", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, ease: "power2.out" }, 3.75);
+    tl.fromTo("#s5-b1", { opacity: 1 }, { opacity: 1, duration: 0.01 }, 3.75);
+    tl.fromTo("#s5-b1 .s5-w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.1, ease: "power2.out" }, 3.8);
+    tl.fromTo("#s5-b2", { opacity: 1 }, { opacity: 1, duration: 0.01 }, 4.2);
+    tl.fromTo("#s5-b2 .s5-w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, 4.25);
+    window.__timelines["s5-talk"] = tl;
+  </script>
+</template>

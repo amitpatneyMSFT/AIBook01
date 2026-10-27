@@ -1,0 +1,35 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #f2f5f9; font-family: Inter, sans-serif; color: #0b0d10; }
+    #s9-head { position: absolute; left: 96px; top: 300px; font-size: 96px; line-height: 1.02; font-weight: 900; letter-spacing: -0.035em; }
+    #s9-head .ln { display: block; white-space: nowrap; }
+    #s9-head .w { display: inline-block; }
+    #s9-head .a { color: #5a68ee; }
+    #s9-sub { position: absolute; left: 100px; top: 530px; width: 740px; font-size: 40px; line-height: 1.25; font-weight: 700; color: #3a4352; }
+    #s9-script { position: absolute; left: 928px; top: 64px; width: 896px; height: 952px; border-radius: 14px; overflow: hidden; background: #0e1116; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    #s9-script img { display: block; width: 896px; height: 952px; }
+    #s9-vwrap { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: #f2f5f9; }
+    #s9-vid { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: cover; }
+    #s9-cursor { position: absolute; left: 0; top: 0; width: 64px; height: 64px; z-index: 5; }
+  </style>
+  <div data-hf-id="hf-hmi8" id="root" data-composition-id="s9-motion" data-width="1920" data-height="1080">
+    <h2 data-hf-id="hf-3vnr" id="s9-head"><span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-ufi3" class="w">A</span> <span data-hf-id="hf-ecla" class="w a">story,</span></span><span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-bobx" class="w">animated.</span></span></h2>
+    <p data-hf-id="hf-pyau" id="s9-sub">A recurring character, kinetic headlines and stat cards.</p>
+    <div data-hf-id="hf-44cf" id="s9-script"><img data-hf-id="hf-j3c1" src="assets/img/studio/motion-explainer.png" alt="Motion explainer script editor" /></div>
+    <div data-hf-id="hf-c8x8" id="s9-vwrap"><video data-hf-id="hf-jxez" id="s9-vid" class="clip" src="assets/video/motion.mp4" data-start="2.7" data-duration="5.1" data-media-start="15.2" data-has-audio="true" data-volume="1" playsinline></video></div>
+    <svg data-hf-id="hf-x4mc" id="s9-cursor" viewBox="0 0 24 24"><path data-hf-id="hf-061l" d="M3 2 L3 19 L8 14.5 L11 21.5 L14 20.2 L11 13.5 L18 13 Z" fill="#fff" stroke="#0b0d10" stroke-width="1.6" stroke-linejoin="round" /></svg>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#root", { y: 1080, filter: "blur(20px)" }, { y: 0, filter: "blur(0px)", duration: 0.5, ease: "power3.out" }, 0);
+    tl.fromTo("#s9-head .w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.1, ease: "power2.out" }, 0.55);
+    tl.fromTo("#s9-sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, 1.0);
+    tl.set("#s9-cursor", { x: 2000, y: 700 }, 0);
+    tl.to("#s9-cursor", { x: 1802, y: 919, duration: 1.4, ease: "power2.inOut" }, 0.95);
+    tl.to("#s9-cursor", { scale: 0.84, duration: 0.07, ease: "power2.in", transformOrigin: "13% 8%" }, 2.5);
+    tl.to("#s9-cursor", { scale: 1, duration: 0.12, ease: "power2.out" }, 2.57);
+    tl.fromTo("#s9-vwrap", { clipPath: "circle(0px at 1810px 924px)" }, { clipPath: "circle(2400px at 1810px 924px)", duration: 0.65, ease: "power2.inOut" }, 2.65);
+    tl.to("#s9-cursor", { opacity: 0, duration: 0.15 }, 2.7);
+    window.__timelines["s9-motion"] = tl;
+  </script>
+</template>

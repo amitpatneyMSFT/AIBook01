@@ -1,0 +1,51 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #f2f5f9; font-family: Inter, sans-serif; color: #0b0d10; }
+    .s4-line { position: absolute; left: 96px; top: 390px; width: 700px; font-size: 72px; line-height: 1.04; font-weight: 900; letter-spacing: -0.03em; }
+    .s4-line .ln { display: block; white-space: nowrap; }
+    .s4-line .w { display: inline-block; }
+    .s4-line .a { color: #5a68ee; }
+    .s4-win { position: absolute; border-radius: 14px; overflow: hidden; background: #12151a; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    .s4-win img { display: block; width: 100%; height: 100%; }
+    #s4-panel { left: 1122px; top: 218px; width: 718px; height: 661px; }
+    #s4-trans { left: 1130px; top: 200px; width: 655px; height: 676px; }
+    #s4-search { left: 790px; top: 274px; width: 1066px; height: 532px; }
+    #s4-cursor { position: absolute; left: 0; top: 0; width: 64px; height: 64px; }
+  </style>
+  <div data-hf-id="hf-z49o" id="root" data-composition-id="s4-notes" data-width="1920" data-height="1080">
+    <h2 data-hf-id="hf-wiiy" id="s4-l1" class="s4-line"><span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-49dh" class="w">Save</span> <span data-hf-id="hf-7d5f" class="w">answers</span></span><span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-0lrs" class="w">as</span> <span data-hf-id="hf-6ttc" class="w a">notes.</span></span></h2>
+    <h2 data-hf-id="hf-skex" id="s4-l2" class="s4-line"><span data-hf-id="hf-ogei" class="ln"><span data-hf-id="hf-10ct" class="w">Run</span> <span data-hf-id="hf-s14w" class="w a">a</span> <span data-hf-id="hf-yqy7" class="w a">prompt</span></span><span data-hf-id="hf-o23h" class="ln"><span data-hf-id="hf-mx6p" class="w">on</span> <span data-hf-id="hf-952a" class="w">any</span> <span data-hf-id="hf-8unt" class="w">source.</span></span></h2>
+    <h2 data-hf-id="hf-rsr4" id="s4-l3" class="s4-line"><span data-hf-id="hf-qu8o" class="ln"><span data-hf-id="hf-zdvt" class="w">Ask</span> <span data-hf-id="hf-pzft" class="w">across</span></span><span data-hf-id="hf-qfxn" class="ln"><span data-hf-id="hf-18ow" class="w a">every</span> <span data-hf-id="hf-w305" class="w">notebook.</span></span></h2>
+    <div data-hf-id="hf-7boq" id="s4-panel" class="s4-win"><img data-hf-id="hf-fete" id="s4-notes-img" src="assets/img/notes-panel.png" alt="Notes tab with three saved notes" /></div>
+    <div data-hf-id="hf-07se" id="s4-trans" class="s4-win"><img data-hf-id="hf-i4sl" src="assets/img/transformations.png" alt="Transformations: reusable prompts" /></div>
+    <div data-hf-id="hf-bj4c" id="s4-search" class="s4-win"><img data-hf-id="hf-j76f" src="assets/img/search.png" alt="Search your library with a grounded, cited answer" /></div>
+    <svg data-hf-id="hf-ielj" id="s4-cursor" viewBox="0 0 24 24"><path data-hf-id="hf-061l" d="M3 2 L3 19 L8 14.5 L11 21.5 L14 20.2 L11 13.5 L18 13 Z" fill="#fff" stroke="#0b0d10" stroke-width="1.6" stroke-linejoin="round" /></svg>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#root", { clipPath: "circle(0px at 1650px 250px)" }, { clipPath: "circle(2200px at 1650px 250px)", duration: 0.6, ease: "power2.inOut" }, 0);
+    tl.set("#s4-cursor", { x: 1642, y: 245 }, 0);
+    tl.to("#s4-cursor", { x: 2100, y: 900, duration: 0.7, ease: "power2.in" }, 0.7);
+    tl.fromTo("#s4-l1 .w", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, 0.45);
+    tl.fromTo("#s4-notes-img", { clipPath: "inset(0% 0% 77% 0%)" }, { clipPath: "inset(0% 0% 77% 0%)", duration: 0.01 }, 0);
+    tl.to("#s4-notes-img", { clipPath: "inset(0% 0% 51% 0%)", duration: 0.3, ease: "expo.out" }, 1.0);
+    tl.to("#s4-notes-img", { clipPath: "inset(0% 0% 27% 0%)", duration: 0.3, ease: "expo.out" }, 1.4);
+    tl.to("#s4-notes-img", { clipPath: "inset(0% 0% 3% 0%)", duration: 0.3, ease: "expo.out" }, 1.8);
+    tl.set("#s4-trans", { opacity: 0 }, 0);
+    tl.set("#s4-search", { opacity: 0 }, 0);
+    tl.set(["#s4-l2", "#s4-l3"], { opacity: 0 }, 0);
+    // beat B: transformations
+    tl.to("#s4-l1", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power3.in" }, 3.0);
+    tl.to("#s4-panel", { opacity: 0, x: -60, filter: "blur(10px)", duration: 0.25, ease: "power3.in" }, 3.0);
+    tl.set("#s4-l2", { opacity: 1 }, 3.2);
+    tl.fromTo("#s4-l2 .w", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, 3.2);
+    tl.fromTo("#s4-trans", { opacity: 0, scale: 0.9, filter: "blur(8px)", transformOrigin: "50% 50%" }, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 3.1);
+    // beat C: search
+    tl.to("#s4-l2", { opacity: 0, filter: "blur(8px)", duration: 0.2, ease: "power3.in" }, 5.3);
+    tl.to("#s4-trans", { opacity: 0, x: -80, filter: "blur(10px)", duration: 0.25, ease: "power3.in" }, 5.3);
+    tl.set("#s4-l3", { opacity: 1 }, 5.5);
+    tl.fromTo("#s4-l3 .w", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, 5.5);
+    tl.fromTo("#s4-search", { opacity: 0, x: 140, filter: "blur(10px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 5.4);
+    window.__timelines["s4-notes"] = tl;
+  </script>
+</template>
