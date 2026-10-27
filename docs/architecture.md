@@ -79,6 +79,8 @@ src/
     watermark.ts watermark image library and post-render stamping; watermarkchoice.ts is the client-safe choice type
     slides.ts    PowerPoint deck themes, normalization and PPTX export
     python.ts    runs the Python renderers and mixer under scripts/
+    hyperframes.ts  runs the optional HyperFrames compositor for training videos
+    traininghyperframes.ts  turns a training timeline into a HyperFrames composition
     paths.ts     data/audio, images, voices and video paths, traversal-safe resolution
     rangefile.ts byte-range file streaming for media routes
     http.ts  types.ts   JSON response helpers and shared types
@@ -89,6 +91,7 @@ scripts/
   whiteboard/render.py  Python renderer that composites and encodes whiteboard videos
   motion/render.py    Python renderer that animates layered motion explainers
   audio/mix.py        mixes a ducked music bed under an MP3 or an MP4's soundtrack
+  training/render.py  Python compositor for training videos; hf_assist.py backs the optional HyperFrames compositor
   video/watermark.py  stamps a text or image watermark onto a finished MP4
 ```
 

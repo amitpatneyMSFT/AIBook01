@@ -159,6 +159,7 @@ commentary. Only a model provider is required.
 | `GEMINI_API_KEY`, `GEMINI_MODEL` | YouTube transcripts via Gemini |
 | `YOUTUBE_API_KEY`, `YOUTUBE_COOKIE`, `YOUTUBE_CAPTION_LANG` | YouTube metadata and transcript fallbacks |
 | `PYTHON_BIN` | Python interpreter for the whiteboard, motion and training renderers (default `python`; `python3` in the Docker image) |
+| `TRAINING_RENDERER`, `HYPERFRAMES_BIN`, `HYPERFRAMES_WORKERS`, `HYPERFRAMES_TIMEOUT_MIN` | Opt in to the HyperFrames compositor for training videos (`TRAINING_RENDERER=hyperframes`; default is the Python compositor), and tune it: a `hyperframes` executable to use instead of `npx`, parallel browser workers (default 1–4 by CPU count) and a time limit (default 120 minutes) ([Training videos](training-videos.md#the-hyperframes-compositor)) |
 | `MOTION_MUSIC_DIR` | Optional folder of music tracks, listed read-only in the music picker alongside tracks uploaded in the app ([Background music](studio.md#background-music)) |
 | `ALLOW_PRIVATE_NETWORK_FETCH` | Allow fetching private/loopback addresses (default off; see [SECURITY.md](../SECURITY.md)) |
 | `MAX_FETCH_BYTES`, `FETCH_MAX_REDIRECTS`, `FETCH_TIMEOUT_MS` | Limits on fetched pages and files |

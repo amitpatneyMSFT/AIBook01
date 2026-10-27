@@ -1,10 +1,11 @@
 """Write synthetic assets for scripts/check-training.ts.
 
 Usage:
-    python scripts/training/fixtures.py OUT_DIR JOBS_JSON
+    python scripts/training/fixtures.py OUT_DIR JOBS_JSON [--alpha]
 
 Creates two presenter clips — one transparent VP9 WebM, as Azure returns them,
-and one opaque on green to exercise the compositor's key-out — each with a tone
+and one opaque on green to exercise the compositor's key-out (both transparent
+with --alpha) — each with a tone
 standing in for speech, plus a placeholder drawing for every raster job the
 timeline needs. No model calls, no network.
 """
@@ -50,7 +51,8 @@ def clip(name, seconds, freq, opaque):
 
 
 clip("clip-0.webm", 6, 330, False)
-clip("clip-1.webm", 5, 392, True)
+# HyperFrames lays clips over the stage as they are, so its check needs both transparent.
+clip("clip-1.webm", 5, 392, "--alpha" not in sys.argv)
 
 palette = [(37, 99, 235), (14, 165, 233), (245, 158, 11), (30, 41, 59)]
 for n, job in enumerate(jobs):

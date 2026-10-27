@@ -7,6 +7,9 @@
  * Run with: npm run check:training
  * Add --1080p to compose at 1920x1080 instead of the default 1280x720.
  * Add --no-animation to exercise instant cuts and simultaneous bullet reveals.
+ * Add --hyperframes to compose with the HyperFrames renderer (the one
+ * TRAINING_RENDERER=hyperframes selects) instead of render.py. It needs
+ * Node, Chrome and ffmpeg for HyperFrames, and fetches it with npx on first use.
  *
  * Writes into .data/training-check/ and prints the MP4 path, so the result can
  * be watched as well as checked.
@@ -28,6 +31,15 @@ import {
   renderConfig,
   type ComposeInput,
 } from "../src/lib/trainingtimeline";
+import { buildHyperframesProject } from "../src/lib/traininghyperframes";
+import {
+  clipsHaveAlpha,
+  finishHyperframesRender,
+  runHyperframesRender,
+  stageHyperframesProject,
+} from "../src/lib/hyperframes";
+
+const useHyperframes = process.argv.includes("--hyperframes");
 
 const py = process.env.PYTHON_BIN || "python";
 const dir = path.join(process.env.DATA_DIR || path.join(process.cwd(), ".data"), "training-check");
@@ -84,7 +96,7 @@ const input: ComposeInput = {
 fs.mkdirSync(dir, { recursive: true });
 const jobsPath = path.join(dir, "jobs.json");
 fs.writeFileSync(jobsPath, JSON.stringify(rasterJobs(input)));
-run([path.join("scripts", "training", "fixtures.py"), dir, jobsPath]);
+run([path.join("scripts", "training", "fixtures.py"), dir, jobsPath, ...(useHyperframes ? ["--alpha"] : [])]);
 
 // The fixture clips run 6 s and 5 s; time the speech to them as Azure's would be.
 const timings = [
@@ -96,25 +108,55 @@ if (tl.warnings.length) {
   console.error("FAIL  " + tl.warnings.join("\n      "));
   process.exit(1);
 }
-const config = renderConfig(tl, {
-  output: at("check.mp4"),
-  background: "#1F2A37",
-  palette: compositionPalette(composition),
-  clip: (i) => at(`clip-${i}.webm`),
-  raster: (key, state) => at(`${key}-${state}.png`),
-  burnCaptions: true,
-});
-const configPath = path.join(dir, "config.json");
-fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-
-const started = Date.now();
-run([path.join("scripts", "training", "render.py"), configPath]);
-
 const out = path.join(dir, "check.mp4");
-if (!fs.existsSync(out) || fs.statSync(out).size < 10_000) {
-  console.error("FAIL  the compositor produced no usable file");
-  process.exit(1);
+const started = Date.now();
+
+async function composeWithHyperframes() {
+  const clips = [0, 1].map((i) => path.join(dir, `clip-${i}.webm`));
+  const alpha = await clipsHaveAlpha(clips, dir);
+  if (clips.some((c) => !alpha[c])) throw new Error("a fixture clip has no transparency");
+  const project = buildHyperframesProject(tl, {
+    background: "#1F2A37",
+    clip: (i) => clips[i],
+    raster: (key, state) => path.join(dir, `${key}-${state}.png`),
+    burnCaptions: true,
+  });
+  const projectDir = path.join(dir, "hyperframes");
+  stageHyperframesProject(project, projectDir);
+  const mp4 = await runHyperframesRender(projectDir, project.fps);
+  await finishHyperframesRender(mp4, out, tl.duration, dir);
 }
-console.log(
-  `ok    ${config.duration.toFixed(1)} s of ${config.width}x${config.height} video composed in ${((Date.now() - started) / 1000).toFixed(1)} s → ${out}`
-);
+
+function composeWithPython() {
+  const config = renderConfig(tl, {
+    output: at("check.mp4"),
+    background: "#1F2A37",
+    palette: compositionPalette(composition),
+    clip: (i) => at(`clip-${i}.webm`),
+    raster: (key, state) => at(`${key}-${state}.png`),
+    burnCaptions: true,
+  });
+  const configPath = path.join(dir, "config.json");
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+  run([path.join("scripts", "training", "render.py"), configPath]);
+}
+
+function report() {
+  if (!fs.existsSync(out) || fs.statSync(out).size < 10_000) {
+    console.error("FAIL  the compositor produced no usable file");
+    process.exit(1);
+  }
+  console.log(
+    `ok    ${tl.duration.toFixed(1)} s of ${tl.width}x${tl.height} video composed${useHyperframes ? " with HyperFrames" : ""} in ${((Date.now() - started) / 1000).toFixed(1)} s → ${out}`
+  );
+}
+
+if (useHyperframes) {
+  composeWithHyperframes().then(report, (e) => {
+    console.error(`FAIL  ${e instanceof Error ? e.message : e}`);
+    process.exit(1);
+  });
+} else {
+  composeWithPython();
+  report();
+}
