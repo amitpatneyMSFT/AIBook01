@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { MOTION_PALETTES } from "@/lib/motion";
 import {
+  ANIMATION_PRESETS,
   CAPTION_LABELS,
   CAPTION_MODES,
   CUE_TRANSITIONS,
   LAYOUTS,
   LAYOUT_LABELS,
+  normalizeAnimation,
   PIP_CORNER_SETTINGS,
   PIP_SCALES,
   PIP_SIZE_SETTINGS,
@@ -113,6 +115,14 @@ export default function TrainingDesign({
   const set = onChange;
   const composed = value.mode === "composed";
   const off = disabled || !composed;
+  const animationPreset = (Object.keys(ANIMATION_PRESETS) as (keyof typeof ANIMATION_PRESETS)[]).find(
+    (key) => {
+      const preset = ANIMATION_PRESETS[key];
+      return (["transitions", "pictures", "bullets", "layout"] as const).every(
+        (part) => value.animation[part] === preset[part]
+      );
+    }
+  ) ?? "custom";
 
   const toggle = (key: "sectionCards" | "intro" | "outro", label: string) => (
     <label className="flex items-center gap-2 text-[13px]">
@@ -146,6 +156,47 @@ export default function TrainingDesign({
       </fieldset>
 
       <div className={`space-y-4 ${composed ? "" : "opacity-50"}`}>
+        <fieldset className="space-y-2" disabled={off}>
+          <legend className={labelCls}>Animation</legend>
+          <label className="block">
+            <span className={labelCls}>Animation amount</span>
+            <select
+              className={inputCls}
+              value={animationPreset}
+              onChange={(e) => {
+                const preset = ANIMATION_PRESETS[e.target.value as keyof typeof ANIMATION_PRESETS];
+                set({ animation: normalizeAnimation(preset) });
+              }}
+            >
+              {(Object.keys(ANIMATION_PRESETS) as (keyof typeof ANIMATION_PRESETS)[]).map((key) => (
+                <option key={key} value={key}>{ANIMATION_PRESETS[key].label}</option>
+              ))}
+              <option value="custom" disabled>Custom</option>
+            </select>
+          </label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {([
+              ["transitions", "Visual transitions and fades"],
+              ["pictures", "Slow push-in on pictures"],
+              ["bullets", "Reveal bullet points one at a time"],
+              ["layout", "Glide the presenter between layouts"],
+            ] as const).map(([key, label]) => (
+              <label key={key} className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={value.animation[key]}
+                  onChange={(e) => set({ animation: { ...value.animation, [key]: e.target.checked } })}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          <p className="text-[11px] text-[var(--muted)]">
+            Applies to every existing and new visual in the preview and MP4. None uses instant cuts and shows all
+            bullets together. Knowledge-check answers still appear when spoken. Presenter gestures are unchanged.
+          </p>
+        </fieldset>
+
         <div>
           <span className={labelCls}>Theme</span>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Theme">

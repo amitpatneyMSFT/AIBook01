@@ -18,6 +18,7 @@ import {
   findAnchor,
   hashText,
   normalizeComposition,
+  normalizeAnimation,
   PIP_SCALES,
   resolvePip,
   tokenize,
@@ -440,6 +441,16 @@ export type TrainingTimeline = {
   width: number;
   height: number;
   duration: number;
+  timing: {
+    cueIn: number;
+    cueOut: number;
+    reveal: number;
+    cardFade: number;
+    lowerIn: number;
+    lowerOut: number;
+    edgeIn: number;
+    edgeOut: number;
+  };
   /** Where each section's speech (its presenter clip) plays. */
   sections: { index: number; title: string; start: number; duration: number }[];
   cards: TimelineCard[];
@@ -465,6 +476,7 @@ export function compileTrainingTimeline(
   timingsIn: (SectionTiming | null | undefined)[]
 ): TrainingTimeline {
   const c = input.composition;
+  const animation = normalizeAnimation(c.animation);
   const { width, height } = frameSize(c);
   const timings = usableTimings(input.sections, timingsIn);
   const jobs = rasterJobs(input);
@@ -498,7 +510,7 @@ export function compileTrainingTimeline(
     // Keyframes stay in time order even when a cue starts with its section.
     const from = Math.max(t, avatar.at(-1)?.t ?? 0);
     avatar.push({ t: round(from), ...pose, ease: "linear" });
-    avatar.push({ t: round(from + (instant ? 0.001 : LAYOUT_MOVE_S)), ...next, ease: "inOutSine" });
+    avatar.push({ t: round(from + (!animation.layout ? 0 : instant ? 0.001 : LAYOUT_MOVE_S)), ...next, ease: "inOutSine" });
     pose = next;
   };
 
@@ -594,6 +606,8 @@ export function compileTrainingTimeline(
         const a = at(p.cue.answerAnchor);
         const t = a ? start + a.t : cueStart + (cueEnd - cueStart) * 0.6;
         states.push(Math.min(cueEnd - 0.3, Math.max(cueStart + 0.6, t)));
+      } else if (count > 1 && !animation.bullets) {
+        states.push(...Array<number>(count - 1).fill(cueStart));
       } else if (count > 1) {
         const bullets = cueBullets(p.cue, input.objectives);
         const span = cueEnd - cueStart;
@@ -615,13 +629,13 @@ export function compileTrainingTimeline(
         section: i,
         kind: p.cue.kind,
         layout: p.cue.layout,
-        transition: p.cue.transition,
+        transition: animation.transitions ? p.cue.transition : "cut",
         start: round(cueStart),
         end: round(cueEnd),
         panel,
         rasterKey: cueKeyOf(p.cue),
         states: states.map(round),
-        kenBurns: Boolean(p.cue.kenBurns),
+        kenBurns: animation.pictures && Boolean(p.cue.kenBurns),
         match: p.match,
       });
     });
@@ -661,6 +675,16 @@ export function compileTrainingTimeline(
     width,
     height,
     duration: round(clock),
+    timing: {
+      cueIn: animation.transitions ? CUE_IN_S : 0,
+      cueOut: animation.transitions ? CUE_OUT_S : 0,
+      reveal: animation.transitions ? REVEAL_S : 0,
+      cardFade: animation.transitions ? 0.4 : 0,
+      lowerIn: animation.transitions ? 0.5 : 0,
+      lowerOut: animation.transitions ? 0.4 : 0,
+      edgeIn: animation.transitions ? 0.4 : 0,
+      edgeOut: animation.transitions ? 0.6 : 0,
+    },
     sections,
     cards,
     cues,
@@ -679,14 +703,14 @@ const easeInOutSine = (u: number) => -(Math.cos(Math.PI * u) - 1) / 2;
 
 /** The presenter's pose at time t. */
 export function sampleAvatar(frames: AvatarKeyframe[], t: number): AvatarPose {
-  if (!frames.length || t <= frames[0].t) {
+  if (!frames.length || t < frames[0].t) {
     const f = frames[0];
     return f ? { cx: f.cx, cy: f.cy, scale: f.scale, opacity: f.opacity } : PRESENTER_POSE;
   }
   for (let i = 1; i < frames.length; i++) {
     const a = frames[i - 1];
     const b = frames[i];
-    if (t <= b.t) {
+    if (t < b.t) {
       const span = b.t - a.t;
       const u = span > 0 ? (t - a.t) / span : 1;
       const e = b.ease === "inOutSine" ? easeInOutSine(u) : u;
@@ -749,7 +773,7 @@ export function renderConfig(
     duration: tl.duration,
     background: opts.background,
     palette: opts.palette,
-    timing: { cueIn: CUE_IN_S, cueOut: CUE_OUT_S, reveal: REVEAL_S },
+    timing: tl.timing,
     clips: tl.sections.map((s) => ({ src: opts.clip(s.index), start: s.start, duration: s.duration })),
     avatar: tl.avatar,
     cues: tl.cues

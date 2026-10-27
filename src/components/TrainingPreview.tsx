@@ -6,9 +6,6 @@ import type { MotionPalette } from "@/lib/motion";
 import type { InfographicContent } from "@/lib/types";
 import { CUE_KIND_LABELS, type TrainingCue } from "@/lib/trainingvisuals";
 import {
-  CUE_IN_S,
-  CUE_OUT_S,
-  REVEAL_S,
   compileTrainingTimeline,
   rasterJobs,
   sampleAvatar,
@@ -16,6 +13,7 @@ import {
   type ComposeInput,
   type SectionTiming,
   type TimelineCue,
+  type TrainingTimeline,
 } from "@/lib/trainingtimeline";
 import { prefersReducedMotion } from "@/lib/reducedMotion";
 
@@ -43,12 +41,12 @@ const KIND_COLOR: Record<string, string> = {
   infographic: "#c084fc",
 };
 
-function cueLook(q: TimelineCue, t: number, reduced: boolean) {
+function cueLook(q: TimelineCue, t: number, reduced: boolean, timing: TrainingTimeline["timing"]) {
   let opacity = 1;
   let dx = 0;
   let scale = 1;
   let clip: string | undefined;
-  const u = clamp01((t - q.start) / CUE_IN_S);
+  const u = timing.cueIn ? clamp01((t - q.start) / timing.cueIn) : 1;
   if (u < 1 && q.transition !== "cut" && !reduced) {
     const e = outCubic(u);
     if (q.transition === "slide") [dx, opacity] = [(1 - e) * 0.08, e];
@@ -56,7 +54,7 @@ function cueLook(q: TimelineCue, t: number, reduced: boolean) {
     else if (q.transition === "wipe") clip = `inset(0 ${(1 - e) * 100}% 0 0)`;
     else opacity = e;
   }
-  if (t >= q.end) opacity *= 1 - clamp01((t - q.end) / CUE_OUT_S);
+  if (t >= q.end) opacity *= timing.cueOut ? 1 - clamp01((t - q.end) / timing.cueOut) : 0;
   return { opacity, dx, scale, clip };
 }
 
@@ -112,11 +110,12 @@ function standInCue(
   cues: TimelineCue[],
   cueById: Map<string, TrainingCue>,
   t: number,
-  section: number | undefined
+  section: number | undefined,
+  cueOut: number
 ): TrainingCue | null {
   const showing = new Set(
     cues
-      .filter((q) => t >= q.start && t < q.end + CUE_OUT_S)
+      .filter((q) => t >= q.start && t < q.end + cueOut)
       .map((q) => cueById.get(q.id)?.imageId)
       .filter(Boolean)
   );
@@ -235,7 +234,7 @@ export default function TrainingPreview({
 
   const k = stageW / tl.width;
   const pose = sampleAvatar(tl.avatar, t);
-  const covering = tl.cards.some((c) => t >= c.start + 0.4 && t < c.start + c.duration - 0.4);
+  const covering = tl.cards.some((c) => t >= c.start + tl.timing.cardFade && t < c.start + c.duration - tl.timing.cardFade);
   const caption = tl.captions.find((c) => t >= c.start && t < c.end);
   const W = tl.width;
   const H = tl.height;
@@ -251,17 +250,19 @@ export default function TrainingPreview({
     const job = jobs.find((j) => j.key === q.rasterKey);
     if (!cue || !job || !q.panel) return null;
     return (
-      <div key={`${q.id}-${state}`} style={{ position: "absolute", ...px(q.panel), ...style }}>
-        <TrainingVisual
-          role="cue"
-          width={job.width}
-          height={job.height}
-          state={state}
-          palette={palette}
-          cue={cue}
-          ctx={ctxFor(q.section)}
-          infographic={cue.infographicId ? infographics.get(cue.infographicId) ?? null : null}
-        />
+      <div key={`${q.id}-${state}`} style={{ position: "absolute", overflow: "hidden", ...px(q.panel), ...style }}>
+        <div style={{ transform: q.kenBurns && !reduced ? `scale(${1 + 0.06 * clamp01((t - q.start) / Math.max(0.1, q.end - q.start))})` : undefined }}>
+          <TrainingVisual
+            role="cue"
+            width={job.width}
+            height={job.height}
+            state={state}
+            palette={palette}
+            cue={cue}
+            ctx={ctxFor(q.section)}
+            infographic={cue.infographicId ? infographics.get(cue.infographicId) ?? null : null}
+          />
+        </div>
       </div>
     );
   };
@@ -297,9 +298,9 @@ export default function TrainingPreview({
           {!covering && (
             <>
               {tl.cues
-                .filter((q) => t >= q.start && t < q.end + CUE_OUT_S)
+                .filter((q) => t >= q.start && t < q.end + tl.timing.cueOut)
                 .map((q) => {
-                  const look = cueLook(q, t, reduced);
+                  const look = cueLook(q, t, reduced, tl.timing);
                   const s = stateAt(q, t);
                   const wrap: CSSProperties = {
                     opacity: look.opacity,
@@ -309,10 +310,10 @@ export default function TrainingPreview({
                     borderRadius: 18,
                   };
                   const sinceReveal = t - q.states[s];
-                  if (s > 0 && sinceReveal < REVEAL_S && !reduced) {
+                  if (s > 0 && q.states[s] > q.start && sinceReveal < tl.timing.reveal && !reduced) {
                     return [
                       visual(q, s - 1, wrap),
-                      visual(q, s, { ...wrap, opacity: look.opacity * clamp01(sinceReveal / REVEAL_S) }),
+                      visual(q, s, { ...wrap, opacity: look.opacity * clamp01(sinceReveal / tl.timing.reveal) }),
                     ];
                   }
                   return visual(q, s, wrap);
@@ -337,7 +338,7 @@ export default function TrainingPreview({
                     />
                   ) : (
                     <StandIn
-                      cue={standInCue(tl.cues, cueById, t, section.index)}
+                      cue={standInCue(tl.cues, cueById, t, section.index, tl.timing.cueOut)}
                       palette={palette}
                       u={(0.86 * H * pose.scale) / 100}
                     />
@@ -349,7 +350,11 @@ export default function TrainingPreview({
                   style={{
                     position: "absolute",
                     ...px(tl.lowerThird.rect),
-                    opacity: clamp01((t - tl.lowerThird.start) / 0.5) * clamp01((tl.lowerThird.end - t) / 0.4),
+                    opacity: (tl.timing.lowerIn ? clamp01((t - tl.lowerThird.start) / tl.timing.lowerIn) : 1) *
+                      (tl.timing.lowerOut ? clamp01((tl.lowerThird.end - t) / tl.timing.lowerOut) : 1),
+                    transform: tl.timing.lowerIn && !reduced
+                      ? `translateX(${-0.4 * tl.lowerThird.rect.w * W * (1 - outCubic(clamp01((t - tl.lowerThird.start) / tl.timing.lowerIn)))}px)`
+                      : undefined,
                   }}
                 >
                   <TrainingVisual
@@ -387,14 +392,27 @@ export default function TrainingPreview({
           {tl.cards
             .filter((c) => t >= c.start && t < c.start + c.duration)
             .map((c) => {
-              const fadeIn = c.start <= 0.01 ? 1 : clamp01((t - c.start) / 0.4);
-              const fadeOut = c.start + c.duration >= tl.duration - 0.01 ? 1 : clamp01((c.start + c.duration - t) / 0.4);
+              const fadeIn = c.start <= 0.01 || !tl.timing.cardFade ? 1 : clamp01((t - c.start) / tl.timing.cardFade);
+              const fadeOut = c.start + c.duration >= tl.duration - 0.01 || !tl.timing.cardFade ? 1 : clamp01((c.start + c.duration - t) / tl.timing.cardFade);
               return (
                 <div key={c.rasterKey} style={{ position: "absolute", inset: 0, opacity: Math.min(fadeIn, fadeOut) }}>
                   <TrainingVisual role={c.role} width={W} height={H} state={0} palette={palette} ctx={ctxFor(c.section)} />
                 </div>
               );
             })}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background: "#000",
+              opacity: reduced ? 0 : 1 - Math.min(
+                tl.timing.edgeIn ? clamp01(t / tl.timing.edgeIn) : 1,
+                tl.timing.edgeOut ? clamp01((tl.duration - t) / tl.timing.edgeOut) : 1
+              ),
+            }}
+          />
         </div>
         {audioUrl && section && (
           <audio

@@ -6,6 +6,7 @@
  *
  * Run with: npm run check:training
  * Add --1080p to compose at 1920x1080 instead of the default 1280x720.
+ * Add --no-animation to exercise instant cuts and simultaneous bullet reveals.
  *
  * Writes into .data/training-check/ and prints the MP4 path, so the result can
  * be watched as well as checked.
@@ -13,7 +14,13 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { DEFAULT_COMPOSITION, compositionPalette, normalizeCues } from "../src/lib/trainingvisuals";
+import {
+  ANIMATION_PRESETS,
+  DEFAULT_COMPOSITION,
+  compositionPalette,
+  normalizeAnimation,
+  normalizeCues,
+} from "../src/lib/trainingvisuals";
 import {
   compileTrainingTimeline,
   estimateSectionTiming,
@@ -40,6 +47,7 @@ const S1 = "Welcome to the check. Here is what you will learn today. First the s
 const S2 = "The pilot built 24 beds. Most residents said they would join.";
 const composition = {
   ...DEFAULT_COMPOSITION,
+  animation: normalizeAnimation(process.argv.includes("--no-animation") ? ANIMATION_PRESETS.none : ANIMATION_PRESETS.full),
   resolution: process.argv.includes("--1080p") ? ("1080p" as const) : ("720p" as const),
   sectionCards: true,
   intro: true,
