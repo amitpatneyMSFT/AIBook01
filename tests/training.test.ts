@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_COMPOSITION,
+  ANIMATION_PRESETS,
   PRESENTER_ONLY,
   TRAINING_VISUALS_INSTRUCTION,
   anchorAt,
   findAnchor,
   hashText,
   normalizeComposition,
+  normalizeAnimation,
   normalizeCue,
   normalizeCues,
   normalizeVisualPlan,
@@ -24,6 +26,7 @@ import {
   estimateSectionTiming,
   layoutGeometry,
   rasterJobs,
+  renderConfig,
   sampleAvatar,
   splitSentences,
   stateAt,
@@ -112,6 +115,19 @@ describe("anchors", () => {
 });
 
 describe("cue and composition normalizers", () => {
+  it("preserves old animation defaults and normalizes individual toggles", () => {
+    expect(normalizeComposition({}).animation).toEqual(normalizeAnimation(undefined));
+    expect(normalizeAnimation(null)).toEqual(normalizeAnimation(undefined));
+    expect(normalizeAnimation({ transitions: false, pictures: "false", bullets: 0, layout: false })).toEqual({
+      transitions: false, pictures: true, bullets: true, layout: false,
+    });
+    for (const preset of Object.values(ANIMATION_PRESETS)) {
+      const animation = normalizeAnimation(preset);
+      expect(normalizeComposition({ animation }).animation).toEqual(animation);
+      expect(animation).not.toHaveProperty("label");
+    }
+  });
+
   it("treats an artifact without composition as presenter only", () => {
     expect(normalizeComposition(undefined)).toEqual(PRESENTER_ONLY);
     expect(normalizeComposition({}).mode).toBe("composed");
@@ -199,6 +215,80 @@ describe("visual plan", () => {
 });
 
 describe("timeline", () => {
+  it("disables all visual animation without losing content, timing, or delayed answers", () => {
+    const source = input();
+    source.sections[1].cues![0].kenBurns = true;
+    source.sections[1].cues![1] = cue({
+      kind: "check", anchor: "Most residents said",
+      question: "Would residents join?", answer: "Yes.",
+    });
+    const full = compileTrainingTimeline(source, []);
+    const none = compileTrainingTimeline({
+      ...source,
+      composition: comp({ animation: normalizeAnimation(ANIMATION_PRESETS.none) }),
+    }, []);
+    expect(none.sections).toEqual(full.sections);
+    expect(none.cards).toEqual(full.cards);
+    expect(none.captions).toEqual(full.captions);
+    expect(none.duration).toBe(full.duration);
+    expect(Object.values(none.timing).every((seconds) => seconds === 0)).toBe(true);
+    expect(none.cues.every((q) => q.transition === "cut" && !q.kenBurns)).toBe(true);
+    const objectives = none.cues.find((q) => q.kind === "objectives")!;
+    expect(objectives.states).toEqual(Array(4).fill(objectives.start));
+    expect(stateAt(objectives, objectives.start)).toBe(3);
+    const check = none.cues.find((q) => q.kind === "check")!;
+    expect(stateAt(check, check.start)).toBe(0);
+    expect(check.states[1]).toBeGreaterThan(check.start);
+    expect(check.states).toEqual(full.cues.find((q) => q.kind === "check")!.states);
+    expect(none.cues.map((q) => q.rasterKey)).toEqual(full.cues.map((q) => q.rasterKey));
+    expect(source.sections[1].cues![0].kenBurns).toBe(true);
+    expect(source.sections[0].cues![0].transition).toBe("slide");
+
+    const config = renderConfig(none, {
+      output: "test.mp4", background: "#000000", palette: {},
+      clip: (section) => `clip-${section}.webm`,
+      raster: (key, state) => `${key}-${state}.png`,
+      burnCaptions: true,
+    });
+    expect(config.timing).toEqual(none.timing);
+    expect(config.cues[1].states[3]).toEqual({
+      at: objectives.start, src: `${objectives.rasterKey}-3.png`,
+    });
+  });
+
+  it("applies each animation toggle independently", () => {
+    const source = input();
+    source.sections[1].cues![0].kenBurns = true;
+    const full = compileTrainingTimeline(source, []);
+    for (const key of ["transitions", "pictures", "bullets", "layout"] as const) {
+      const changed = compileTrainingTimeline({
+        ...source,
+        composition: comp({ animation: { ...normalizeAnimation(undefined), [key]: false } }),
+      }, []);
+      expect(changed.cues.map((q) => q.transition)).toEqual(
+        full.cues.map((q) => key === "transitions" ? "cut" : q.transition)
+      );
+      expect(changed.cues.map((q) => q.kenBurns)).toEqual(
+        full.cues.map((q) => key !== "pictures" && q.kenBurns)
+      );
+      if (key !== "bullets") expect(changed.cues.map((q) => q.states)).toEqual(full.cues.map((q) => q.states));
+      if (key !== "layout") expect(changed.avatar).toEqual(full.avatar);
+      if (key !== "transitions") expect(changed.timing).toEqual(full.timing);
+    }
+  });
+
+  it("cuts presenter layouts exactly at the cue boundary when gliding is off", () => {
+    const source = input({ composition: comp({ animation: normalizeAnimation(ANIMATION_PRESETS.none) }) });
+    const tl = compileTrainingTimeline(source, []);
+    const stat = tl.cues.find((q) => q.kind === "stat")!;
+    const target = layoutGeometry("pip", source.composition).avatar;
+    expect(sampleAvatar(tl.avatar, stat.start - 0.01).scale).toBe(1);
+    expect(sampleAvatar(tl.avatar, stat.start)).toEqual(target);
+    expect(sampleAvatar(tl.avatar, stat.start + LAYOUT_MOVE_S / 2)).toEqual(target);
+    const first = tl.cues[0];
+    expect(sampleAvatar(tl.avatar, first.start)).toEqual(layoutGeometry(first.layout, source.composition).avatar);
+  });
+
   it("splits sentences and marks paragraph ends", () => {
     const s = splitSentences(S1);
     expect(s.map((x) => x.paragraphEnd)).toEqual([false, true, false, false, true]);

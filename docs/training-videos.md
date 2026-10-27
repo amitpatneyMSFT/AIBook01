@@ -80,6 +80,18 @@ around it on one timeline:
   in lowercase from mid-sentence. Text is only ever capitalized, never lowered.
 - **Transitions.** Cut, fade, slide in, wipe or zoom, plus a slow push-in on
   pictures.
+- **Animation controls.** In **Design > Animation**, choose **None**,
+  **Light (transitions only)**, or **Full**, then customize the toggles for
+  visual transitions and fades, picture push-ins, progressive bullet reveals,
+  and presenter gliding between layouts. These settings apply to existing and
+  new visuals in both the preview and exported MP4. **Full** preserves the
+  original behavior. **None** uses instant cuts, keeps pictures still, shows
+  all bullets together, and switches presenter layouts without gliding.
+  Knowledge-check answers still appear when spoken, and the presenter's own
+  gestures and speech are unchanged. Individual visuals' transition and
+  picture-motion choices are preserved and take effect again when their
+  animation toggle is enabled. Changing only animation requires recomposition,
+  not new avatar clips.
 - **Design.** The **Design** tab sets the theme colors, the default layout and
   transition, the corner for the small presenter, opening and closing cards, a
   title card between sections, an on-screen name for the presenter, a logo, the
@@ -135,6 +147,8 @@ and longer at 1080p. It needs Python with `numpy`, `Pillow` and
 `imageio-ffmpeg`, the same as whiteboard and motion videos. Run
 `npm run check:training` to compose a short synthetic video and confirm the
 setup works. It needs no Azure or model access.
+Use `npm run check:training -- --no-animation` to check the animation-free
+rendering path.
 
 ## Sample
 

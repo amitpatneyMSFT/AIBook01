@@ -27,7 +27,10 @@ type Artifact = {
   id: string;
   content: {
     sections: { cues?: { kind: string; stat?: { value: string } }[] }[];
-    composition?: { mode: string };
+    composition?: {
+      mode: string;
+      animation: { transitions: boolean; pictures: boolean; bullets: boolean; layout: boolean };
+    };
   };
 };
 
@@ -68,6 +71,21 @@ test("plans visuals with the transcript, edits one and previews it on the timeli
   // Selecting a marker jumps back to its editor.
   await expect(dialog.getByRole("textbox", { name: "Number" })).toHaveValue("41%");
 
+  await dialog.getByRole("tab", { name: "Design" }).click();
+  const amount = dialog.getByLabel("Animation amount");
+  await expect(amount).toHaveValue("full");
+  await amount.selectOption("light");
+  await expect(dialog.getByLabel("Visual transitions and fades")).toBeChecked();
+  await expect(dialog.getByLabel("Slow push-in on pictures")).not.toBeChecked();
+  await expect(dialog.getByLabel("Reveal bullet points one at a time")).not.toBeChecked();
+  await expect(dialog.getByLabel("Glide the presenter between layouts")).not.toBeChecked();
+  await dialog.getByLabel("Slow push-in on pictures").check();
+  await expect(amount).toHaveValue("custom");
+  await amount.selectOption("none");
+  await expect(dialog.getByLabel("Visual transitions and fades")).not.toBeChecked();
+  await dialog.getByRole("tab", { name: "Preview" }).click();
+  await expect(dialog.getByRole("img", { name: /^Preview of the composed/ })).toBeVisible();
+
   await dialog.getByRole("button", { name: "Save changes" }).click();
   await expect(dialog.getByRole("button", { name: "Saved" })).toBeVisible();
 
@@ -76,6 +94,9 @@ test("plans visuals with the transcript, edits one and previews it on the timeli
   const training = artifacts.find((a) => a.type === "training")!;
   const saved = (await (await request.get(`/api/artifacts/${training.id}`)).json()) as Artifact;
   expect(saved.content.composition?.mode).toBe("composed");
+  expect(saved.content.composition?.animation).toEqual({
+    transitions: false, pictures: false, bullets: false, layout: false,
+  });
   const cues = saved.content.sections.flatMap((s) => s.cues ?? []);
   expect(cues.map((c) => c.kind)).toEqual(["title", "objectives", "stat"]);
   expect(cues[2].stat?.value).toBe("41%");

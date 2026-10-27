@@ -34,7 +34,11 @@ TIMING = cfg.get("timing", {})
 CUE_IN = float(TIMING.get("cueIn", 0.5))
 CUE_OUT = float(TIMING.get("cueOut", 0.35))
 REVEAL = float(TIMING.get("reveal", 0.35))
-CARD_FADE = 0.4
+CARD_FADE = float(TIMING.get("cardFade", 0.4))
+LOWER_IN = float(TIMING.get("lowerIn", 0.5))
+LOWER_OUT = float(TIMING.get("lowerOut", 0.4))
+EDGE_IN = float(TIMING.get("edgeIn", 0.4))
+EDGE_OUT = float(TIMING.get("edgeOut", 0.6))
 ff = imageio_ffmpeg.get_ffmpeg_exe()
 
 _FONTS = [
@@ -226,11 +230,11 @@ class Clip:
 def pose_at(frames, t):
     if not frames:
         return 0.5, 0.5, 1.0, 1.0
-    if t <= frames[0]["t"]:
+    if t < frames[0]["t"]:
         f = frames[0]
         return f["cx"], f["cy"], f["scale"], f["opacity"]
     for a, b in zip(frames, frames[1:]):
-        if t <= b["t"]:
+        if t < b["t"]:
             span = b["t"] - a["t"]
             u = clamp01((t - a["t"]) / span) if span > 0 else 1.0
             e = in_out_sine(u) if b.get("ease") == "inOutSine" else u
@@ -273,7 +277,7 @@ def draw_cue(frame, q, t):
         if t >= s["at"]:
             k = i
     im = load(states[k]["src"], (w, h))
-    if k > 0 and t - states[k]["at"] < REVEAL:
+    if k > 0 and states[k]["at"] > start and t - states[k]["at"] < REVEAL:
         im = Image.blend(load(states[k - 1]["src"], (w, h)), im, clamp01((t - states[k]["at"]) / REVEAL))
 
     if q.get("kenBurns"):
@@ -283,7 +287,7 @@ def draw_cue(frame, q, t):
         im = im.resize((w, h), Image.BILINEAR, box=(ox, oy, ox + cw, oy + ch))
 
     opacity, dx, scale = 1.0, 0.0, 1.0
-    u = clamp01((t - start) / CUE_IN)
+    u = clamp01((t - start) / CUE_IN) if CUE_IN else 1.0
     kind = q.get("transition", "fade")
     if u < 1 and kind != "cut":
         e = out_cubic(u)
@@ -296,7 +300,7 @@ def draw_cue(frame, q, t):
         else:
             opacity = e
     if t >= end:
-        opacity *= 1 - clamp01((t - end) / CUE_OUT)
+        opacity *= 1 - clamp01((t - end) / CUE_OUT) if CUE_OUT else 0.0
 
     if not (w >= W and h >= H):
         sh, pad = shadow(w, h)
@@ -312,8 +316,8 @@ def card_opacity(card, t):
     s, d = card["start"], card["duration"]
     if t < s or t >= s + d:
         return 0.0
-    fade_in = 1.0 if s <= 0.01 else clamp01((t - s) / CARD_FADE)
-    fade_out = 1.0 if s + d >= TOTAL - 0.01 else clamp01((s + d - t) / CARD_FADE)
+    fade_in = 1.0 if s <= 0.01 or not CARD_FADE else clamp01((t - s) / CARD_FADE)
+    fade_out = 1.0 if s + d >= TOTAL - 0.01 or not CARD_FADE else clamp01((s + d - t) / CARD_FADE)
     return min(fade_in, fade_out)
 
 
@@ -322,8 +326,8 @@ def draw_lower_third(frame, lt, t):
         return
     x, y, w, h = rect_px(lt["rect"])
     im = load(lt["src"], (w, h))
-    u = out_cubic(clamp01((t - lt["start"]) / 0.5))
-    out = clamp01((lt["end"] - t) / 0.4)
+    u = out_cubic(clamp01((t - lt["start"]) / LOWER_IN)) if LOWER_IN else 1.0
+    out = clamp01((lt["end"] - t) / LOWER_OUT) if LOWER_OUT else 1.0
     paste(frame, im, x - (1 - u) * (w * 0.4), y, u * out)
 
 
@@ -414,7 +418,8 @@ for n in range(frames_total):
         paste(frame, logo, W - logo.width - int(W * 0.02), int(H * 0.03), 0.85)
 
     # Fade up from and down to black.
-    edge = min(clamp01(t / 0.4), clamp01((TOTAL - t) / 0.6))
+    edge = min(clamp01(t / EDGE_IN) if EDGE_IN else 1.0,
+               clamp01((TOTAL - t) / EDGE_OUT) if EDGE_OUT else 1.0)
     if edge < 1:
         frame = Image.blend(black, frame, edge)
     proc.stdin.write(frame.convert("RGB").tobytes())
