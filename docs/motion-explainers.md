@@ -138,6 +138,8 @@ sources ─► scene planner ─► pictures ─► narration ─► timeline �
    bob, kinetic type, transitions, a closing card and a fade out. Frames are
    piped to FFmpeg, then narration is placed on the soundtrack, the music (if
    any) is ducked under the voice, and the mix is normalized to −16 LUFS.
+   Set `MOTION_RENDERER=hyperframes` to render with HyperFrames instead; see
+   [The HyperFrames renderer](#the-hyperframes-renderer).
 
 **The image model never draws text.** Headlines, sublines, chips, stats and the
 closing card are set by the renderer in a real font, because image models
@@ -162,11 +164,34 @@ renderer without spending any model calls:
 ```bash
 npm run check:motion              # 1280x720
 npm run check:motion -- --1080p   # 1920x1080
+npm run check:motion -- --hyperframes   # with the HyperFrames renderer
 ```
 
 That renders a 13-second video from synthetic shapes and tones into
 `.data/motion-check/`. It covers every layer type, every transition, the
 key-out and music ducking.
+
+### The HyperFrames renderer
+
+Set `MOTION_RENDERER=hyperframes` to render with
+[HyperFrames](https://github.com/heygen-com/hyperframes) instead of
+`render.py`. The plan, narration and timeline are the same; only the render
+step differs. `src/lib/motionhyperframes.ts` turns the config into one HTML
+composition (a scene per section, with every layer animated by GSAP), and
+`src/lib/hyperframes.ts` renders it in headless Chrome at the config's frame
+rate. Before that, `scripts/motion/hf_assist.py` keys out and trims each
+character picture with the same code `render.py` uses; afterward it lays the
+narration and music (ducked, normalized to −16 LUFS) under the silent render,
+also with `render.py`'s code, so the sound is identical. Text is real browser
+text, so it is crisp, and set in the system's sans-serif font (Segoe UI where
+the browser finds it).
+
+It needs `ffmpeg` on `PATH`, Chrome (which HyperFrames downloads on first use)
+and network access for `npx` to fetch the pinned release the first time. Set
+`HYPERFRAMES_BIN`, `HYPERFRAMES_WORKERS` and `HYPERFRAMES_TIMEOUT_MIN` as for
+[training videos](training-videos.md#the-hyperframes-compositor). If
+HyperFrames cannot render, the video is made with `render.py` and its note says
+so.
 
 ## Music
 

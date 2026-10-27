@@ -20,6 +20,7 @@ import {
   type VideoProgress,
 } from "./videobuild";
 import { stampWatermark } from "./watermark";
+import { motionRenderer, renderMotionWithHyperframes } from "./hyperframes";
 
 type AssetJob = {
   key: string;
@@ -193,7 +194,19 @@ async function runBuild(
   const configPath = path.join(work, "config.json");
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
-  await runPythonRenderer(["motion", "render.py"], configPath);
+  let fallback: string | undefined;
+  let rendered = false;
+  if (motionRenderer() === "hyperframes") {
+    try {
+      await renderMotionWithHyperframes(config, configPath, out, work);
+      rendered = fs.existsSync(out);
+    } catch (e) {
+      console.warn("[motion] HyperFrames render failed, using the standard renderer", e);
+      fallback =
+        "HyperFrames could not render this video, so the standard renderer was used.";
+    }
+  }
+  if (!rendered) await runPythonRenderer(["motion", "render.py"], configPath);
 
   if (!fs.existsSync(out)) {
     throw new Error("The renderer finished but produced no file.");
@@ -211,7 +224,12 @@ async function runBuild(
   fs.renameSync(out, final);
 
   setProgress(id, {
-    progress: { stage: "done", done: 1, total: 1, note: mark.note } satisfies VideoProgress,
+    progress: {
+      stage: "done",
+      done: 1,
+      total: 1,
+      note: [fallback, mark.note].filter(Boolean).join(" ") || undefined,
+    } satisfies VideoProgress,
     videoUrl: `/api/video/${id}?v=${Date.now()}`,
     bytes: fs.statSync(final).size,
     music: Boolean(music),

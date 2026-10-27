@@ -174,7 +174,7 @@ so, whenever HyperFrames cannot render, or when a presenter clip arrived
 without transparency (only `render.py` keys out a flat background).
 
 Run `npm run check:training -- --hyperframes` to compose the synthetic video
-this way. The bundled `scripts/training/gsap.min.js` is GSAP, used under its
+this way. The bundled `scripts/hyperframes/gsap.min.js` is GSAP, used under its
 [standard license](https://gsap.com/standard-license/).
 
 ## Sample

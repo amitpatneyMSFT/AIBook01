@@ -65,5 +65,8 @@ skills-lock.json
 # Azure onboarding session artifacts (may hold deploy secrets)
 .copilot-azure/
 
+# Python bytecode from the renderers' shared modules
+__pycache__/
+
 # Environment-specific Azure parameters
 infra/main.parameters.local.json
