@@ -1,0 +1,63 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #0b0d10; font-family: Inter, sans-serif; color: #0b0d10; }
+    .beat { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+    .big { position: absolute; left: 96px; font-weight: 900; letter-spacing: -0.045em; line-height: 0.98; white-space: nowrap; }
+    .big .ln { display: block; }
+    .big .w { display: inline-block; }
+    .sub { position: absolute; left: 100px; font-weight: 700; line-height: 1.3; }
+    #b1 { background: #0b0d10; color: #f2f5f9; }
+    #b2 { background: #6f7dff; }
+    #b3 { background: #f2f5f9; }
+    #b4 { background: #ffd23f; }
+    #b1 .big { top: 90px; font-size: 290px; line-height: 0.95; }
+    #b1 .sub { top: 740px; font-size: 52px; width: 1500px; }
+    #b1 .y { color: #ffd23f; }
+    #b2 .big { top: 250px; font-size: 280px; }
+    #b2 .sub { top: 600px; font-size: 44px; width: 1500px; }
+    #b3 .big { top: 250px; font-size: 280px; }
+    #b3 .big .a { color: #5a68ee; }
+    #b3 .sub { top: 600px; font-size: 52px; width: 1500px; }
+    #b4 .big { top: 220px; font-size: 220px; }
+    #b4 .sub { top: 560px; font-size: 56px; width: 1500px; }
+    #b4 .sub span { display: block; margin-bottom: 16px; }
+  </style>
+  <div data-hf-id="hf-uyyv" id="root" data-composition-id="s11-yours" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-ug5h" id="b1" class="beat">
+      <h2 data-hf-id="hf-yn43" class="big"><span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-d530" class="w">JSON.</span> <span data-hf-id="hf-3p31" class="w">XML.</span></span><span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-yitm" class="w">CSV.</span> <span data-hf-id="hf-cwpi" class="w y">HAR.</span></span></h2>
+      <p data-hf-id="hf-w28i" class="sub">See the structure of any source. Diagnose HAR files with AI.</p>
+    </div>
+    <div data-hf-id="hf-ye9i" id="b2" class="beat">
+      <h2 data-hf-id="hf-e4ub" class="big"><span data-hf-id="hf-b6f6" class="w">Any</span> <span data-hf-id="hf-609d" class="w">model.</span></h2>
+      <p data-hf-id="hf-c4g6" class="sub">Azure OpenAI, OpenAI, Anthropic, Gemini, Groq, Mistral, DeepSeek, OpenRouter, xAI, Perplexity, Together, Ollama, llama.cpp, LM Studio.</p>
+    </div>
+    <div data-hf-id="hf-2cdj" id="b3" class="beat">
+      <h2 data-hf-id="hf-dqja" class="big"><span data-hf-id="hf-h2xq" class="w">Export</span> <span data-hf-id="hf-aace" class="w a">it.</span></h2>
+      <p data-hf-id="hf-tedk" class="sub">Markdown, PPTX, MP3, MP4, PNG, Anki and Quizlet CSV.</p>
+    </div>
+    <div data-hf-id="hf-6ahk" id="b4" class="beat">
+      <h2 data-hf-id="hf-dc89" class="big"><span data-hf-id="hf-ogei" class="ln"><span data-hf-id="hf-43og" class="w">Yours</span> <span data-hf-id="hf-z575" class="w">to</span> <span data-hf-id="hf-1slx" class="w">keep.</span></span></h2>
+      <p data-hf-id="hf-5uxr" class="sub"><span data-hf-id="hf-n3c6">Everything lives in .data/ on your machine.</span><span data-hf-id="hf-gw7w">Undo any delete for 8 seconds.</span><span data-hf-id="hf-k8id">Set a password before you share it.</span></p>
+    </div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#root", { x: -1920, filter: "blur(20px)" }, { x: 0, filter: "blur(0px)", duration: 0.5, ease: "power3.out" }, 0);
+    const beats = [
+      { id: "#b1", t: 0.5, set: null },
+      { id: "#b2", t: 2.5, from: "inset(100% 0% 0% 0%)" },
+      { id: "#b3", t: 4.5, from: "inset(0% 0% 0% 100%)" },
+      { id: "#b4", t: 6.5, from: "circle(0px at 960px 540px)", to: "circle(1700px at 960px 540px)" },
+    ];
+    beats.forEach((b, i) => {
+      if (b.from) {
+        tl.fromTo(b.id, { clipPath: b.from }, { clipPath: b.to || "inset(0% 0% 0% 0%)", duration: 0.5, ease: "power2.inOut" }, b.t - 0.5);
+      }
+      const start = i === 0 ? 0.5 : b.t;
+      if (i > 0) tl.set(beats[i - 1].id, { opacity: 0 }, b.t);
+      tl.fromTo(b.id + " .big .w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, start);
+      tl.fromTo(b.id + " .sub", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, start + 0.4);
+    });
+    window.__timelines["s11-yours"] = tl;
+  </script>
+</template>

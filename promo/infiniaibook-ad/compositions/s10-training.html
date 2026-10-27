@@ -1,0 +1,55 @@
+<template>
+  <style>
+    #root { position: absolute; inset: 0; overflow: hidden; background: #6f7dff; font-family: Inter, sans-serif; color: #0b0d10; }
+    .s10-head { position: absolute; left: 96px; font-size: 80px; line-height: 1.04; font-weight: 900; letter-spacing: -0.03em; }
+    .s10-head .ln { display: block; white-space: nowrap; }
+    .s10-head .w { display: inline-block; }
+    .s10-sub { position: absolute; left: 100px; width: 780px; font-size: 38px; line-height: 1.25; font-weight: 700; }
+    #s10-modal { position: absolute; left: 1000px; top: 56px; width: 824px; height: 968px; border-radius: 14px; overflow: hidden; background: #0e1116; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    #s10-modal img { display: block; width: 824px; height: 968px; }
+    #s10-vwrap { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: #6f7dff; }
+    #s10-frame { position: absolute; left: 210px; top: 56px; width: 1500px; height: 844px; border-radius: 14px; overflow: hidden; background: #1f2937; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    #s10-vid { position: absolute; left: 0; top: 0; width: 1500px; height: 844px; object-fit: cover; }
+    #s10-cap { position: absolute; left: 210px; top: 936px; font-size: 44px; line-height: 1; font-weight: 700; white-space: nowrap; }
+    #s10-live { position: absolute; left: 1094px; top: 74px; width: 730px; height: 933px; border-radius: 14px; overflow: hidden; background: #0e1116; box-shadow: 0 32px 64px rgba(11,13,16,.38); }
+    #s10-live img { display: block; width: 730px; height: 933px; }
+    #s10-cursor { position: absolute; left: 0; top: 0; width: 64px; height: 64px; z-index: 5; }
+  </style>
+  <div data-hf-id="hf-fl9u" id="root" data-composition-id="s10-training" data-width="1920" data-height="1080">
+    <h2 data-hf-id="hf-21e2" id="s10-h1" class="s10-head" style="top: 290px"><span data-hf-id="hf-smev" class="ln"><span data-hf-id="hf-civn" class="w">Your</span> <span data-hf-id="hf-w76t" class="w">script,</span></span><span data-hf-id="hf-oupj" class="ln"><span data-hf-id="hf-b7a3" class="w">a</span> <span data-hf-id="hf-6e0q" class="w">lip-synced</span></span><span data-hf-id="hf-ogei" class="ln"><span data-hf-id="hf-ukne" class="w">presenter.</span></span></h2>
+    <p data-hf-id="hf-vb64" id="s10-s1" class="s10-sub" style="top: 600px">Slides, numbers and pictures slide in as it speaks.</p>
+    <div data-hf-id="hf-32gz" id="s10-modal"><img data-hf-id="hf-c0je" src="assets/img/training-modal.png" alt="Training video editor with presenter, voice and transcript" /></div>
+    <div data-hf-id="hf-a9zm" id="s10-vwrap">
+      <div data-hf-id="hf-78kf" id="s10-frame"><video data-hf-id="hf-1ai3" id="s10-vid" class="clip" src="assets/video/training.mp4" data-start="2.7" data-duration="4.7" data-media-start="0.5" data-has-audio="true" data-volume="1" playsinline></video></div>
+      <p data-hf-id="hf-5mm4" id="s10-cap">A 3:37 sample. Rendered in about four and a half minutes.</p>
+    </div>
+    <h2 data-hf-id="hf-3bl9" id="s10-h2" class="s10-head" style="top: 340px"><span data-hf-id="hf-o23h" class="ln"><span data-hf-id="hf-7e8s" class="w">Preview</span> <span data-hf-id="hf-cqxh" class="w">it</span> <span data-hf-id="hf-v62i" class="w">live</span></span><span data-hf-id="hf-qu8o" class="ln"><span data-hf-id="hf-gpzr" class="w">in</span> <span data-hf-id="hf-kxir" class="w">your</span> <span data-hf-id="hf-mr2i" class="w">browser.</span></span></h2>
+    <p data-hf-id="hf-yd12" id="s10-s2" class="s10-sub" style="top: 560px">Four VASA-2 presenters. Nothing is recorded.</p>
+    <div data-hf-id="hf-3h32" id="s10-live"><img data-hf-id="hf-gku4" src="assets/img/live-presenter.png" alt="Live presenter dialog with four VASA-2 avatars" /></div>
+    <svg data-hf-id="hf-780g" id="s10-cursor" viewBox="0 0 24 24"><path data-hf-id="hf-061l" d="M3 2 L3 19 L8 14.5 L11 21.5 L14 20.2 L11 13.5 L18 13 Z" fill="#fff" stroke="#0b0d10" stroke-width="1.6" stroke-linejoin="round" /></svg>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#root", { clipPath: "polygon(0% 0%, 0% 0%, -25% 100%, -25% 100%)" }, { clipPath: "polygon(0% 0%, 130% 0%, 105% 100%, 0% 100%)", duration: 0.55, ease: "power2.inOut" }, 0);
+    tl.fromTo("#s10-h1 .w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.09, ease: "power2.out" }, 0.55);
+    tl.fromTo("#s10-s1", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, 1.1);
+    tl.fromTo("#s10-modal", { opacity: 0, x: 140 }, { opacity: 1, x: 0, duration: 0.6, ease: "expo.out" }, 0.3);
+    tl.set("#s10-cursor", { x: 2000, y: 700 }, 0);
+    tl.to("#s10-cursor", { x: 1738, y: 935, duration: 1.4, ease: "power2.inOut" }, 0.95);
+    tl.to("#s10-cursor", { scale: 0.84, duration: 0.07, ease: "power2.in", transformOrigin: "13% 8%" }, 2.5);
+    tl.to("#s10-cursor", { scale: 1, duration: 0.12, ease: "power2.out" }, 2.57);
+    tl.fromTo("#s10-vwrap", { clipPath: "circle(0px at 1746px 940px)" }, { clipPath: "circle(2400px at 1746px 940px)", duration: 0.65, ease: "power2.inOut" }, 2.65);
+    tl.to("#s10-cursor", { opacity: 0, duration: 0.15 }, 2.7);
+    tl.set(["#s10-h1", "#s10-s1", "#s10-modal"], { opacity: 0 }, 3.4);
+    tl.fromTo("#s10-cap", { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.3, ease: "power3.out" }, 3.6);
+    // live preview beat
+    tl.set(["#s10-h2", "#s10-s2", "#s10-live"], { opacity: 0 }, 0);
+    tl.to("#s10-vwrap", { opacity: 0, x: -200, filter: "blur(14px)", duration: 0.3, ease: "power3.in" }, 7.2);
+    tl.fromTo("#s10-live", { opacity: 0, x: 200, filter: "blur(14px)" }, { opacity: 1, x: 0, filter: "blur(0px)", duration: 0.5, ease: "expo.out" }, 7.3);
+    tl.set("#s10-h2", { opacity: 1 }, 7.35);
+    tl.fromTo("#s10-h2 .w", { opacity: 0, filter: "blur(10px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.25, stagger: 0.08, ease: "power2.out" }, 7.35);
+    tl.set("#s10-s2", { opacity: 1 }, 7.9);
+    tl.fromTo("#s10-s2", { filter: "blur(8px)" }, { filter: "blur(0px)", duration: 0.3, ease: "power2.out" }, 7.9);
+    window.__timelines["s10-training"] = tl;
+  </script>
+</template>
