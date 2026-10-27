@@ -304,6 +304,8 @@ export type TrainingContent = SpokenExtras & VideoExtras & {
     submittedAt?: number;
     /** Composed renders: one presenter clip per section, in order. */
     clips?: TrainingClip[];
+    /** While composing: how far the video has been drawn, as a whole percent. */
+    renderPct?: number;
   };
   /** Absent on videos made before composition: they render presenter only. */
   composition?: TrainingComposition;

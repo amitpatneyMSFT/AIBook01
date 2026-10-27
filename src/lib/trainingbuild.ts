@@ -45,6 +45,7 @@ import {
   trainingRenderer,
 } from "./hyperframes";
 import { buildHyperframesProject } from "./traininghyperframes";
+import { throttleProgress } from "./renderprogress";
 import { compositionPalette, normalizeComposition } from "./trainingvisuals";
 import {
   compileTrainingTimeline,
@@ -621,6 +622,13 @@ async function compose(id: string, c: TrainingContent): Promise<void> {
 
     let note: string | undefined;
     let rendered = false;
+    // A fresh reporter per attempt, so a fallback render starts its bar over.
+    const reporter = () => {
+      writeTraining(id, { progress: { stage: "composing", renderPct: 0 } });
+      return throttleProgress((renderPct) =>
+        writeTraining(id, { progress: { stage: "composing", renderPct } }),
+      );
+    };
     if (trainingRenderer() === "hyperframes") {
       try {
         const clipFiles = hashes.map((h) => trainingClipPath(id, h));
@@ -639,7 +647,7 @@ async function compose(id: string, c: TrainingContent): Promise<void> {
         });
         const dir = path.join(work, "hyperframes");
         stageHyperframesProject(project, dir);
-        const mp4 = await runHyperframesRender(dir, project.fps);
+        const mp4 = await runHyperframesRender(dir, project.fps, reporter());
         await finishHyperframesRender(mp4, out, tl.duration, work);
         rendered = fs.existsSync(out);
       } catch (e) {
@@ -663,7 +671,7 @@ async function compose(id: string, c: TrainingContent): Promise<void> {
       });
       const configPath = path.join(work, "training.json");
       fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-      await runPythonRenderer(["training", "render.py"], configPath);
+      await runPythonRenderer(["training", "render.py"], configPath, reporter());
     }
     if (!fs.existsSync(out))
       throw new Error("The compositor finished but produced no file.");
@@ -679,8 +687,12 @@ async function compose(id: string, c: TrainingContent): Promise<void> {
           "[training] music mix failed, keeping the video without it",
           e,
         );
-        note =
-          "The music could not be mixed in, so the video was saved without it.";
+        note = [
+          note,
+          "The music could not be mixed in, so the video was saved without it.",
+        ]
+          .filter(Boolean)
+          .join(" ");
       }
     }
     const mark = await stampWatermark(out, c.watermarkChoice, "training");
@@ -712,6 +724,7 @@ async function compose(id: string, c: TrainingContent): Promise<void> {
     writeTraining(id, {
       progress: {
         stage: "done",
+        renderPct: undefined,
         clips: (c.progress.clips ?? []).map((k) => ({
           hash: k.hash,
           status: "cached" as const,

@@ -464,6 +464,8 @@ for si, scene in enumerate(cfg["scenes"]):
         if t < tr["duration"]:
             frame = transition(tr["kind"], prev_last, frame, t / tr["duration"])
         g = written + f
+        if g % (FPS * 2) == 0:
+            print(f"frame {g}/{frames_total}", file=sys.stderr, flush=True)
         if fade_frames > 0 and g >= frames_total - fade_frames:
             frame = Image.blend(frame, dark, clamp01((g - (frames_total - fade_frames)) / fade_frames))
         proc.stdin.write(frame.convert("RGB").tobytes())

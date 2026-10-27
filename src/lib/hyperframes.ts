@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { runPythonRenderer } from "./python";
+import { lineSplitter, parseRenderProgress } from "./renderprogress";
 import { GSAP_FILE, type HyperframesProject } from "./hyperframesproject";
 import { buildMotionHyperframes } from "./motionhyperframes";
 import type { RenderConfig } from "./motiontimeline";
@@ -71,8 +72,15 @@ function killTree(pid: number | undefined, child: { kill: () => void }) {
   else child.kill();
 }
 
-/** Runs `hyperframes render` in the project and resolves with the MP4 it wrote. */
-export function runHyperframesRender(dir: string, fps: number): Promise<string> {
+/**
+ * Runs `hyperframes render` in the project and resolves with the MP4 it wrote.
+ * `onProgress` hears how far along it is, from 0 to 1.
+ */
+export function runHyperframesRender(
+  dir: string,
+  fps: number,
+  onProgress?: (fraction: number) => void,
+): Promise<string> {
   const bin = process.env.HYPERFRAMES_BIN?.trim();
   const args = ["render", "-f", String(fps), "-q", "standard", "-w", String(workers()), "-o", "render.mp4"];
   const program = bin ? [bin.includes(" ") ? `"${bin}"` : bin, ...args] : ["npx", "--yes", `hyperframes@${HYPERFRAMES_VERSION}`, ...args];
@@ -88,10 +96,18 @@ export function runHyperframesRender(dir: string, fps: number): Promise<string> 
       windowsVerbatimArguments: verbatim,
       env: { ...process.env, DO_NOT_TRACK: "1" },
     });
+    // Its progress lines would crowd the real error out of the tail kept for a failure.
     let log = "";
-    const keep = (d: unknown) => (log = (log + String(d)).slice(-4000));
-    child.stdout.on("data", keep);
-    child.stderr.on("data", keep);
+    const hear = () =>
+      lineSplitter((line) => {
+        const fraction = parseRenderProgress(line);
+        if (fraction === null) log = (log + line + "\n").slice(-4000);
+        else onProgress?.(fraction);
+      });
+    const out = hear();
+    const err = hear();
+    child.stdout.on("data", out);
+    child.stderr.on("data", err);
     const timer = setTimeout(() => {
       killTree(child.pid, child);
       reject(new Error("HyperFrames took too long and was stopped."));
@@ -102,11 +118,13 @@ export function runHyperframesRender(dir: string, fps: number): Promise<string> 
     });
     child.on("close", (code) => {
       clearTimeout(timer);
-      const out = path.join(dir, "render.mp4");
-      if (code === 0 && fs.existsSync(out)) return resolve(out);
+      out.end();
+      err.end();
+      const mp4 = path.join(dir, "render.mp4");
+      if (code === 0 && fs.existsSync(mp4)) return resolve(mp4);
       const tail = log
         .split(/\r?\n/)
-        .filter((l) => l.trim() && !l.startsWith("@hf-progress"))
+        .filter((l) => l.trim())
         .slice(-6)
         .join(" ")
         .slice(-500);
@@ -167,12 +185,13 @@ export async function renderMotionWithHyperframes(
   configPath: string,
   out: string,
   workDir: string,
+  onProgress?: (fraction: number) => void,
 ): Promise<void> {
   const srcs = config.scenes.flatMap((s) => s.layers.flatMap((l) => (l.type === "actor" ? [l.src] : [])));
   const cutouts = srcs.length ? await prepareMotionCutouts(srcs, path.join(workDir, "cutouts")) : {};
   const project = buildMotionHyperframes(config, { cutout: (src) => cutouts[src] });
   const dir = path.join(workDir, "hyperframes");
   stageHyperframesProject(project, dir);
-  const silent = await runHyperframesRender(dir, project.fps);
+  const silent = await runHyperframesRender(dir, project.fps, onProgress);
   await muxMotionAudio(configPath, silent, out, workDir);
 }
