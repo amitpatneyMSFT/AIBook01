@@ -8,6 +8,16 @@
  * them next to it and running the renderer is src/lib/hyperframes.ts.
  */
 import type { AvatarKeyframe, AvatarPose, Rect, TrainingTimeline } from "./trainingtimeline";
+import {
+  GSAP_FILE,
+  HYPERFRAMES_FPS,
+  assetBook,
+  esc,
+  num,
+  type HyperframesProject,
+} from "./hyperframesproject";
+
+export { GSAP_FILE, HYPERFRAMES_FPS, type HyperframesProject };
 
 export type HyperframesOptions = {
   background: string;
@@ -19,23 +29,6 @@ export type HyperframesOptions = {
   logo?: string | null;
   fps?: number;
 };
-
-export type HyperframesProject = {
-  html: string;
-  /** Files the HTML refers to: `name` is relative to the project, `from` is where it is now. */
-  files: { name: string; from: string }[];
-  fps: number;
-  duration: number;
-};
-
-/** The animation library the runner copies into every project. */
-export const GSAP_FILE = "assets/gsap.min.js";
-/** HyperFrames renders at 24, 30 or 60 frames per second. */
-export const HYPERFRAMES_FPS = 30;
-
-const num = (n: number) => Math.round(n * 1000) / 1000;
-const esc = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const DEFAULT_BACKGROUND = "#1F2A37";
 
@@ -66,16 +59,7 @@ export function buildHyperframesProject(tl: TrainingTimeline, opts: HyperframesO
   const fps = opts.fps ?? HYPERFRAMES_FPS;
   const total = tl.duration;
   const scale = W / 1280;
-  const files: HyperframesProject["files"] = [];
-  const names = new Map<string, string>();
-  const asset = (from: string, name: string) => {
-    const known = names.get(from);
-    if (known) return known;
-    const rel = `assets/${name}`;
-    names.set(from, rel);
-    files.push({ name: rel, from });
-    return rel;
-  };
+  const { files, add: asset } = assetBook();
   const picture = (key: string, state: number) => asset(opts.raster(key, state), `r-${key}-${state}.png`);
   const px = (r: Rect) =>
     `left:${Math.round(r.x * W)}px;top:${Math.round(r.y * H)}px;` +

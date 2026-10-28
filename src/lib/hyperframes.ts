@@ -3,7 +3,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { runPythonRenderer } from "./python";
-import { GSAP_FILE, type HyperframesProject } from "./traininghyperframes";
+import { GSAP_FILE, type HyperframesProject } from "./hyperframesproject";
+import { buildMotionHyperframes } from "./motionhyperframes";
+import type { RenderConfig } from "./motiontimeline";
 
 /**
  * Renders a training video with HyperFrames instead of scripts/training/render.py.
@@ -16,9 +18,13 @@ export const HYPERFRAMES_VERSION = "0.8.181";
 
 export type TrainingRenderer = "python" | "hyperframes";
 
-export function trainingRenderer(): TrainingRenderer {
-  return process.env.TRAINING_RENDERER?.trim().toLowerCase() === "hyperframes" ? "hyperframes" : "python";
-}
+const rendererFrom = (name: string): TrainingRenderer =>
+  process.env[name]?.trim().toLowerCase() === "hyperframes" ? "hyperframes" : "python";
+
+/** Which compositor training videos use (TRAINING_RENDERER). */
+export const trainingRenderer = () => rendererFrom("TRAINING_RENDERER");
+/** Which renderer motion explainers use (MOTION_RENDERER). */
+export const motionRenderer = () => rendererFrom("MOTION_RENDERER");
 
 const TIMEOUT_MS = () => {
   const n = Number(process.env.HYPERFRAMES_TIMEOUT_MIN);
@@ -54,7 +60,7 @@ export function stageHyperframesProject(project: HyperframesProject, dir: string
     }
   };
   for (const f of project.files) place(f.from, path.join(dir, f.name));
-  fs.copyFileSync(path.join(process.cwd(), "scripts", "training", "gsap.min.js"), path.join(dir, GSAP_FILE));
+  fs.copyFileSync(path.join(process.cwd(), "scripts", "hyperframes", "gsap.min.js"), path.join(dir, GSAP_FILE));
   fs.writeFileSync(path.join(dir, "index.html"), project.html);
   fs.writeFileSync(path.join(dir, "hyperframes.json"), "{}");
   fs.writeFileSync(path.join(dir, "meta.json"), JSON.stringify({ id: "training", name: "Training video" }));
@@ -119,4 +125,54 @@ export async function finishHyperframesRender(
   const config = path.join(workDir, "hf-finish-config.json");
   fs.writeFileSync(config, JSON.stringify({ op: "finish", input, output, duration }));
   await runPythonRenderer(["training", "hf_assist.py"], config);
+}
+
+export type Cutout = { file: string; width: number; height: number };
+
+/**
+ * Keys out and trims every actor picture the way render.py does, writing the
+ * results beside the project, and reports each one's size.
+ */
+export async function prepareMotionCutouts(
+  srcs: string[],
+  workDir: string,
+): Promise<Record<string, Cutout>> {
+  const result = path.join(workDir, "hf-cutouts.json");
+  const config = path.join(workDir, "hf-cutouts-config.json");
+  fs.mkdirSync(workDir, { recursive: true });
+  fs.rmSync(result, { force: true });
+  fs.writeFileSync(config, JSON.stringify({ op: "cutouts", srcs, dir: workDir, result }));
+  await runPythonRenderer(["motion", "hf_assist.py"], config);
+  return JSON.parse(fs.readFileSync(result, "utf8")) as Record<string, Cutout>;
+}
+
+/** Lays the narration and music (ducked, loudness-normalized) under a silent render. */
+export async function muxMotionAudio(
+  renderConfigPath: string,
+  input: string,
+  output: string,
+  workDir: string,
+): Promise<void> {
+  const config = path.join(workDir, "hf-mux-config.json");
+  fs.writeFileSync(config, JSON.stringify({ op: "mux", config: renderConfigPath, input, output }));
+  await runPythonRenderer(["motion", "hf_assist.py"], config);
+}
+
+/**
+ * Renders a motion explainer with HyperFrames, from the same config render.py
+ * plays back, and writes the finished MP4 (with narration and music) to `out`.
+ */
+export async function renderMotionWithHyperframes(
+  config: RenderConfig,
+  configPath: string,
+  out: string,
+  workDir: string,
+): Promise<void> {
+  const srcs = config.scenes.flatMap((s) => s.layers.flatMap((l) => (l.type === "actor" ? [l.src] : [])));
+  const cutouts = srcs.length ? await prepareMotionCutouts(srcs, path.join(workDir, "cutouts")) : {};
+  const project = buildMotionHyperframes(config, { cutout: (src) => cutouts[src] });
+  const dir = path.join(workDir, "hyperframes");
+  stageHyperframesProject(project, dir);
+  const silent = await runHyperframesRender(dir, project.fps);
+  await muxMotionAudio(configPath, silent, out, workDir);
 }

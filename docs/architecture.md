@@ -79,8 +79,9 @@ src/
     watermark.ts watermark image library and post-render stamping; watermarkchoice.ts is the client-safe choice type
     slides.ts    PowerPoint deck themes, normalization and PPTX export
     python.ts    runs the Python renderers and mixer under scripts/
-    hyperframes.ts  runs the optional HyperFrames compositor for training videos
+    hyperframes.ts  runs the optional HyperFrames renderer for training videos and motion explainers
     traininghyperframes.ts  turns a training timeline into a HyperFrames composition
+    motionhyperframes.ts  turns a motion render config into a HyperFrames composition
     paths.ts     data/audio, images, voices and video paths, traversal-safe resolution
     rangefile.ts byte-range file streaming for media routes
     http.ts  types.ts   JSON response helpers and shared types
@@ -89,7 +90,8 @@ scripts/
   check-ssrf.ts       offline tests for safefetch.ts
   check-motion.ts     renders a motion explainer from synthetic assets (no model calls; --1080p for full HD)
   whiteboard/render.py  Python renderer that composites and encodes whiteboard videos
-  motion/render.py    Python renderer that animates layered motion explainers
+  motion/render.py    Python renderer that animates layered motion explainers (audio.py and cutout.py are shared with hf_assist.py)
+  hyperframes/gsap.min.js  GSAP, copied into every HyperFrames project
   audio/mix.py        mixes a ducked music bed under an MP3 or an MP4's soundtrack
   training/render.py  Python compositor for training videos; hf_assist.py backs the optional HyperFrames compositor
   video/watermark.py  stamps a text or image watermark onto a finished MP4

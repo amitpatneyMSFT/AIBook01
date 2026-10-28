@@ -5,6 +5,9 @@
  *
  * Run with: npm run check:motion
  * Add --1080p to render at 1920x1080 instead of the default 1280x720.
+ * Add --hyperframes to render with the HyperFrames renderer (the one
+ * MOTION_RENDERER=hyperframes selects) instead of render.py. It needs Node,
+ * Chrome and ffmpeg for HyperFrames, and fetches it with npx on first use.
  *
  * Writes into .data/motion-check/ and prints the MP4 path, so the result can
  * be watched as well as checked.
@@ -14,6 +17,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { MOTION_RESOLUTIONS, normalizeMotionPlan } from "../src/lib/motion";
 import { compileTimeline, mp3Duration } from "../src/lib/motiontimeline";
+import { renderMotionWithHyperframes } from "../src/lib/hyperframes";
+
+const useHyperframes = process.argv.includes("--hyperframes");
 
 const py = process.env.PYTHON_BIN || "python";
 const size = MOTION_RESOLUTIONS[process.argv.includes("--1080p") ? "1080p" : "720p"];
@@ -96,13 +102,24 @@ const configPath = path.join(dir, "config.json");
 fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
 const started = Date.now();
-run([path.join("scripts", "motion", "render.py"), configPath]);
-
 const out = path.join(dir, "check.mp4");
-if (!fs.existsSync(out) || fs.statSync(out).size < 10_000) {
-  console.error("FAIL  the renderer produced no usable file");
-  process.exit(1);
+
+function report() {
+  if (!fs.existsSync(out) || fs.statSync(out).size < 10_000) {
+    console.error("FAIL  the renderer produced no usable file");
+    process.exit(1);
+  }
+  console.log(
+    `ok    ${config.duration.toFixed(1)} s of ${config.width}x${config.height} video rendered${useHyperframes ? " with HyperFrames" : ""} in ${((Date.now() - started) / 1000).toFixed(1)} s → ${out}`
+  );
 }
-console.log(
-  `ok    ${config.duration.toFixed(1)} s of ${config.width}x${config.height} video rendered in ${((Date.now() - started) / 1000).toFixed(1)} s → ${out}`
-);
+
+if (useHyperframes) {
+  renderMotionWithHyperframes(config, configPath, out, dir).then(report, (e) => {
+    console.error(`FAIL  ${e instanceof Error ? e.message : e}`);
+    process.exit(1);
+  });
+} else {
+  run([path.join("scripts", "motion", "render.py"), configPath]);
+  report();
+}

@@ -21,10 +21,13 @@ produces a clean cutout.
 
 Requires: numpy, Pillow, imageio-ffmpeg  (python -m pip install numpy pillow imageio-ffmpeg)
 """
-import json, math, os, re, shutil, subprocess, sys
+import json, math, os, re, subprocess, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 import imageio_ffmpeg
+
+from audio import mux
+from cutout import load_cutout
 
 cfg = json.load(open(sys.argv[1], encoding="utf-8"))
 W, H, FPS = cfg["width"], cfg["height"], cfg.get("fps", 24)
@@ -108,45 +111,6 @@ def sample(keyframes, t):
 
 
 # ---------------------------------------------------------------- assets ----
-
-def key_out(im):
-    """Alpha from the border inward: pixels near the border color and connected to the edge."""
-    small = im.convert("RGB")
-    scale = 384 / max(small.size)
-    if scale < 1:
-        small = small.resize((max(1, int(small.width * scale)), max(1, int(small.height * scale))), Image.BILINEAR)
-    a = np.asarray(small).astype(np.int32)
-    border = np.concatenate([a[0], a[-1], a[:, 0], a[:, -1]])
-    bg = np.median(border, axis=0)
-    similar = np.abs(a - bg).sum(axis=2) < 70
-    conn = np.zeros_like(similar)
-    conn[0], conn[-1], conn[:, 0], conn[:, -1] = similar[0], similar[-1], similar[:, 0], similar[:, -1]
-    for _ in range(4000):
-        grown = conn.copy()
-        grown[1:] |= conn[:-1]
-        grown[:-1] |= conn[1:]
-        grown[:, 1:] |= conn[:, :-1]
-        grown[:, :-1] |= conn[:, 1:]
-        grown &= similar
-        if (grown == conn).all():
-            break
-        conn = grown
-    mask = Image.fromarray(((~conn) * 255).astype(np.uint8)).resize(im.size, Image.BILINEAR)
-    mask = mask.filter(ImageFilter.GaussianBlur(1.2))
-    out = im.convert("RGBA")
-    out.putalpha(mask)
-    return out
-
-
-def load_cutout(path):
-    im = Image.open(path).convert("RGBA")
-    alpha = np.asarray(im)[..., 3]
-    # A model that ignored the transparency request returns a fully opaque picture.
-    if (alpha < 200).mean() < 0.02:
-        im = key_out(im)
-    box = im.getchannel("A").point(lambda v: 255 if v > 12 else 0).getbbox()
-    return im.crop(box) if box else im
-
 
 def cover(im, w, h):
     s = max(w / im.width, h / im.height)
@@ -513,47 +477,6 @@ if proc.returncode != 0:
 
 # ------------------------------------------------------------------ audio ----
 
-clips = [c for c in cfg.get("narration", []) if c.get("src") and os.path.exists(c["src"])]
-music = cfg.get("music")
-if music and not os.path.exists(music.get("src", "")):
-    print("music track not found, rendering without it", file=sys.stderr)
-    music = None
-
-if not clips and not music:
-    shutil.copy(silent, OUT)
-else:
-    fmt = "aformat=sample_rates=48000:channel_layouts=stereo"
-    cmd = [ff, "-y", "-loglevel", "error", "-i", silent]
-    for c in clips:
-        cmd += ["-i", c["src"]]
-    parts = []
-    if clips:
-        for i, c in enumerate(clips, 1):
-            ms = int(round(c["at"] * 1000))
-            parts.append(f"[{i}:a]adelay=delays={ms}:all=1,{fmt}[n{i}]")
-        joined = "".join(f"[n{i}]" for i in range(1, len(clips) + 1))
-        parts.append(f"{joined}amix=inputs={len(clips)}:normalize=0,"
-                     f"apad=whole_dur={TOTAL:.3f},atrim=0:{TOTAL:.3f}[narr]")
-    if music:
-        m = len(clips) + 1
-        cmd += ["-stream_loop", "-1", "-i", music["src"]]
-        fade_at = max(0.0, TOTAL - 2.5)
-        parts.append(
-            f"[{m}:a]{fmt},volume={music.get('volume', 0.35)},atrim=0:{TOTAL:.3f},asetpts=PTS-STARTPTS,"
-            f"afade=t=in:st=0:d=1.5,afade=t=out:st={fade_at:.3f}:d=2.5[mus]"
-        )
-        if clips:
-            # Duck the music whenever the narrator speaks, keyed off the voice itself.
-            parts.append("[narr]asplit=2[voice][key]")
-            parts.append("[mus][key]sidechaincompress=threshold=0.02:ratio=10:attack=15:release=450[duck]")
-            parts.append("[voice][duck]amix=inputs=2:normalize=0[pre]")
-        else:
-            parts.append("[mus]anull[pre]")
-    else:
-        parts.append("[narr]anull[pre]")
-    parts.append("[pre]loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000[mix]")
-    cmd += ["-filter_complex", ";".join(parts), "-map", "0:v", "-map", "[mix]", "-c:v", "copy",
-            "-c:a", "aac", "-b:a", "160k", "-t", f"{TOTAL:.3f}", "-movflags", "+faststart", OUT]
-    subprocess.run(cmd, check=True)
+mux(ff, silent, OUT, cfg)
 
 print("done", OUT, round(TOTAL, 1), "seconds")

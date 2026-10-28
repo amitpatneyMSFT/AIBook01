@@ -22,7 +22,7 @@ const eslintConfig = [
       "test-results/**",
       "blob-report/**",
       ".agents/**",
-      "scripts/training/gsap.min.js",
+      "scripts/hyperframes/gsap.min.js",
     ],
   },
 ];
