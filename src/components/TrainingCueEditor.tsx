@@ -1,5 +1,7 @@
 "use client";
 
+import { trainingRequest } from "@/lib/trainingrequest";
+
 import { useState } from "react";
 import {
   CUE_KINDS,
@@ -113,13 +115,16 @@ export default function TrainingCueEditor({
 
   const findShot = () =>
     act("find", async () => {
-      const res = await fetch(`/api/training/${artifactId}/assets/find`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ query: cue.imageQuery, exclude: cue.imageSource ? [cue.imageSource] : [] }),
-      });
-      const j = (await res.json().catch(() => ({}))) as { imageId?: string; credit?: string; source?: string; error?: string };
-      if (!res.ok || !j.imageId) throw new Error(j.error || "Could not find a screenshot.");
+      const j = await trainingRequest<{ imageId?: string; credit?: string; source?: string; error?: string }>(
+        `/api/training/${artifactId}/assets/find`,
+        "Finding a screenshot",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ query: cue.imageQuery, exclude: cue.imageSource ? [cue.imageSource] : [] }),
+        },
+      );
+      if (!j.imageId) throw new Error("Could not find a screenshot.");
       set({ imageId: j.imageId, imageCredit: j.credit, imageSource: j.source });
     });
 

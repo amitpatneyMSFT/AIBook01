@@ -1,9 +1,16 @@
+export class JSONReplyError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "JSONReplyError";
+  }
+}
+
 /**
  * Read a JSON reply defensively. A proxy timeout or crash page is plain text,
  * and `res.json()` would surface it as "Unexpected token…" instead of a
  * message a person can act on.
  */
-export async function readJSONReply<T extends { error?: string }>(
+export async function readJSONReply<T extends { error?: string; status?: number }>(
   res: Response,
   fallback = "The request failed."
 ): Promise<T> {
@@ -21,7 +28,12 @@ export async function readJSONReply<T extends { error?: string }>(
     throw new Error(detail ? `${fallback} (${res.status}: ${detail})` : `${fallback} (${res.status})`);
   }
   if (!res.ok || (json && typeof json.error === "string")) {
-    throw new Error(json?.error || fallback);
+    throw new JSONReplyError(
+      json?.error || fallback,
+      typeof json?.status === "number" && json.status >= 400 && json.status <= 599
+        ? json.status
+        : res.status,
+    );
   }
   return json;
 }

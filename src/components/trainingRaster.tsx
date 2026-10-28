@@ -7,6 +7,7 @@ import type { InfographicContent, TrainingContent } from "@/lib/types";
 import { compositionPalette, normalizeComposition } from "@/lib/trainingvisuals";
 import { rasterJobs, composeInputOf, composeVocabulary, type RasterJob } from "@/lib/trainingtimeline";
 import type { CaseVocabulary } from "@/lib/slidecase";
+import { trainingRequest } from "@/lib/trainingrequest";
 
 /**
  * Draw every visual the compositor still needs and upload it as a PNG.
@@ -94,10 +95,11 @@ export async function prepareRasters(opts: {
   onProgress?: (done: number, total: number) => void;
 }): Promise<void> {
   const { artifactId, content, infographics } = opts;
-  const res = await fetch(`/api/training/${artifactId}/raster`);
-  const j = (await res.json().catch(() => ({}))) as { missing?: { key: string; state: number }[]; error?: string };
-  if (!res.ok) throw new Error(j.error || "Could not check which visuals need drawing.");
-  const missing = j.missing ?? [];
+  const j = await trainingRequest<{ missing?: { key: string; state: number }[]; error?: string }>(
+    `/api/training/${artifactId}/raster`, "Checking which visuals need drawing",
+  );
+  if (!Array.isArray(j.missing)) throw new Error("The server did not return the list of missing visuals.");
+  const missing = j.missing;
   if (!missing.length) return;
 
   const jobs = rasterJobs(composeInputOf(content));
@@ -108,10 +110,10 @@ export async function prepareRasters(opts: {
   host.style.cssText = "position:fixed;left:-30000px;top:0;pointer-events:none;contain:layout paint;";
   document.body.appendChild(host);
   const root = createRoot(host);
-  const { toPng, getFontEmbedCSS } = await import("html-to-image");
   let fontEmbedCSS: string | undefined;
 
   try {
+    const { toPng, getFontEmbedCSS } = await import("html-to-image");
     let done = 0;
     opts.onProgress?.(0, missing.length);
     for (const m of missing) {
@@ -139,22 +141,36 @@ export async function prepareRasters(opts: {
       const node = host.firstElementChild as HTMLElement | null;
       if (!node) throw new Error("A visual did not render.");
       fontEmbedCSS ??= await getFontEmbedCSS(node).catch(() => "");
-      const dataUrl = await toPng(node, {
-        width: job.width,
-        height: job.height,
-        pixelRatio: 1,
-        fontEmbedCSS,
-        skipFonts: !fontEmbedCSS,
-      });
-      const put = await fetch(`/api/training/${artifactId}/raster`, {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ key: m.key, state: m.state, dataUrl }),
-      });
-      if (!put.ok) {
-        const e = (await put.json().catch(() => ({}))) as { error?: string };
-        throw new Error(e.error || "Could not save a drawn visual.");
+      let dataUrl: string;
+      try {
+        dataUrl = await toPng(node, {
+          width: job.width,
+          height: job.height,
+          pixelRatio: 1,
+          fontEmbedCSS,
+          skipFonts: !fontEmbedCSS,
+        });
+      } catch (cause) {
+        const detail = cause instanceof Error ? cause.message : "Unknown error";
+        console.error("[training] visual capture failed", {
+          artifactId, key: m.key, state: m.state, section: job.section, cueId: job.cueId,
+        }, cause);
+        throw new Error(
+          `Drawing visual ${done + 1} of ${missing.length} (${job.role}, ${
+            job.section === undefined ? "video-level" : `section ${job.section + 1}`
+          }, key ${m.key}, state ${m.state}) failed: ${detail}. An image or font may not have loaded; check the browser Console. The render has not been submitted.`,
+          { cause },
+        );
       }
+      await trainingRequest<{ error?: string }>(
+        `/api/training/${artifactId}/raster`,
+        `Uploading visual ${done + 1} of ${missing.length} (key ${m.key}, state ${m.state})`,
+        {
+          method: "PUT",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ key: m.key, state: m.state, dataUrl }),
+        },
+      );
       opts.onProgress?.(++done, missing.length);
     }
   } finally {
