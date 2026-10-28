@@ -12,6 +12,7 @@ import { EMPTY_NARRATION, readNarration, type NarrationSettings } from "@/lib/na
 import { normalizeMusicChoice, type MusicChoice } from "@/lib/musicchoice";
 import { MULTITALKER_SPEAKERS, RATE_CHOICES, WORDS_PER_MINUTE } from "@/lib/voices";
 import { scrollBehavior } from "@/lib/reducedMotion";
+import { readJSONReply } from "@/lib/jsonreply";
 import MusicPicker from "./MusicPicker";
 import NarrationOptions from "./NarrationOptions";
 
@@ -435,8 +436,7 @@ export default function PodcastPlayer({
       if (dirty) await save();
       if (what === "narrate") {
         const res = await fetch(`/api/podcast/${artifactId}/narrate`, { method: "POST" });
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(j.error || "Narration failed.");
+        await readJSONReply(res, "Narration failed.");
         await refresh.current?.();
         setEditing(false);
       }

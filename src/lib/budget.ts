@@ -21,6 +21,15 @@ const LOCAL_PROVIDERS = new Set(["ollama", "lmstudio", "llamacpp"]);
 
 /** Whether this process is pointed at a service that bills by the call. */
 export function cloudSpendLikely(): boolean {
+  // Speech and avatar calls are billed however local the chat model is.
+  if (
+    process.env.AZURE_SPEECH_REGION?.trim() ||
+    process.env.AZURE_SPEECH_RESOURCE_ID?.trim() ||
+    process.env.AZURE_SPEECH_ENDPOINT?.trim() ||
+    process.env.AZURE_SPEECH_KEY?.trim()
+  ) {
+    return true;
+  }
   const provider = process.env.AI_PROVIDER?.trim().toLowerCase() ?? "";
   if (LOCAL_PROVIDERS.has(provider)) return false;
   const base = process.env.AI_BASE_URL?.trim() ?? "";
@@ -28,7 +37,6 @@ export function cloudSpendLikely(): boolean {
   if (/^http:\/\//i.test(base)) return false;
   return Boolean(
     process.env.AZURE_OPENAI_ENDPOINT?.trim() ||
-      process.env.AZURE_SPEECH_REGION?.trim() ||
       process.env.OPENAI_API_KEY?.trim() ||
       base.startsWith("https://")
   );

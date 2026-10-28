@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import { NextResponse } from "next/server";
 import { ok, fail } from "@/lib/http";
+import { keepAliveJSON } from "@/lib/keepalive";
 import { audioDir, audioPath } from "@/lib/paths";
 import { synthesizeDialogue } from "@/lib/speech";
 import { mixMusicInto, resolveMusic } from "@/lib/music";
@@ -21,6 +22,10 @@ type Ctx = { params: Promise<{ id: string }> };
  * one was chosen, and store the timed transcript the player follows along with.
  */
 export async function POST(_req: Request, { params }: Ctx) {
+  return keepAliveJSON(() => narrate(params));
+}
+
+async function narrate(params: Ctx["params"]) {
   const { id } = await params;
   const current = readPodcast(id);
   if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });

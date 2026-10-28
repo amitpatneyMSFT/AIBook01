@@ -8,6 +8,7 @@ import {
   type TokenCredential,
 } from "@azure/identity";
 import { BATCH_PHOTO_MODELS, DEFAULT_PHOTO_MODEL } from "./avatars";
+import { reserve } from "./budget";
 
 /**
  * Azure Speech "Text to Speech Avatar" batch synthesis — the Foundry model
@@ -192,6 +193,9 @@ export async function submitAvatarJob(
     );
   }
   const image = process.env.AZURE_AVATAR_BACKGROUND_URL?.trim();
+  // Batch avatar video is billed by running time, so price the spoken minutes.
+  const spokenWords = ssml.replace(/<[^>]*>/g, " ").split(/\s+/).filter(Boolean).length;
+  reserve("avatar", Math.max(25, Math.ceil((spokenWords / 150) * 40)));
   const body = {
     description: opts.description?.slice(0, 200),
     inputKind: "SSML",

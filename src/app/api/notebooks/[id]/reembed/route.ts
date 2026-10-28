@@ -30,6 +30,7 @@ export async function POST(_req: Request, { params }: Ctx) {
     }
 
     // Only chunks that are missing a vector or carry one from another model.
+    const model = embedModel();
     const stale = db
       .prepare(
         `SELECT id, text FROM chunks
@@ -37,10 +38,10 @@ export async function POST(_req: Request, { params }: Ctx) {
             AND (embedding IS NULL OR embed_model IS NULL OR embed_model != ?)
           ORDER BY idx`
       )
-      .all(id, embedModel()) as unknown as Row[];
+      .all(id, model) as unknown as Row[];
 
     if (!stale.length) {
-      return ok({ reembedded: 0, model: embedModel(), upToDate: true });
+      return ok({ reembedded: 0, model, upToDate: true });
     }
 
     const update = db.prepare(
@@ -52,16 +53,16 @@ export async function POST(_req: Request, { params }: Ctx) {
     let done = 0;
     for (let i = 0; i < stale.length; i += BATCH) {
       const slice = stale.slice(i, i + BATCH);
-      const vectors = await embed(slice.map((r) => r.text));
+      const vectors = await embed(slice.map((r) => r.text), model);
       slice.forEach((row, j) => {
         const vec = vectors[j];
         if (!vec) return;
-        update.run(floatsToBlob(vec), embedModel(), vec.length, row.id);
+        update.run(floatsToBlob(vec), model, vec.length, row.id);
         done++;
       });
     }
 
-    return ok({ reembedded: done, model: embedModel(), upToDate: false });
+    return ok({ reembedded: done, model, upToDate: false });
   } catch (e) {
     return fail(e);
   }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import fs from "node:fs";
 import { nanoid } from "nanoid";
 import { db } from "@/lib/db";
+import { imageDir, imagePath, videoDir, videoPath } from "@/lib/paths";
 import { exportNotebookZip, importNotebookZip } from "@/lib/notebookpack";
 import { listNotes } from "@/lib/notes";
 import { listSessions, sessionMessages } from "@/lib/sessions";
@@ -60,5 +62,47 @@ describe("notebook export and import", () => {
     expect(message.content).toBe("It rained [1].");
     expect(message.citations?.[0]?.sourceId).toBe(source.id);
     expect(message.citations?.[0]?.sourceId).not.toBe(sourceId);
+  });
+
+  it("restores media under new ids and points the saved references at them", async () => {
+    const notebookId = nanoid(12);
+    const videoId = nanoid(12);
+    const pictureId = nanoid(12);
+    db.prepare("INSERT INTO notebooks (id, title, emoji, created_at) VALUES (?, ?, ?, ?)").run(
+      notebookId,
+      "Media",
+      "🎬",
+      1
+    );
+    const training = {
+      videoUrl: `/api/video/${videoId}?v=1`,
+      captionsUrl: `/api/training/${videoId}/captions?v=1`,
+      sections: [{ cues: [{ imageId: pictureId }] }],
+      composition: { logoId: pictureId },
+    };
+    db.prepare(
+      "INSERT INTO artifacts (id, notebook_id, type, title, content, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+    ).run(videoId, notebookId, "training", "Video", JSON.stringify(training), 1);
+    fs.mkdirSync(videoDir(), { recursive: true });
+    fs.mkdirSync(imageDir(), { recursive: true });
+    fs.writeFileSync(videoPath(videoId), "mp4");
+    fs.writeFileSync(imagePath(pictureId), "png");
+
+    const packed = await exportNotebookZip(notebookId);
+    db.prepare("DELETE FROM notebooks WHERE id = ?").run(notebookId);
+    const imported = await importNotebookZip(packed!.buffer);
+
+    const row = db
+      .prepare("SELECT id, content FROM artifacts WHERE notebook_id = ?")
+      .get(imported.id) as { id: string; content: string };
+    const content = JSON.parse(row.content);
+    expect(row.id).not.toBe(videoId);
+    expect(content.videoUrl).toBe(`/api/video/${row.id}?v=1`);
+    expect(content.captionsUrl).toBe(`/api/training/${row.id}/captions?v=1`);
+    const newPicture = content.sections[0].cues[0].imageId;
+    expect(newPicture).not.toBe(pictureId);
+    expect(content.composition.logoId).toBe(newPicture);
+    expect(fs.existsSync(videoPath(row.id))).toBe(true);
+    expect(fs.existsSync(imagePath(newPicture))).toBe(true);
   });
 });

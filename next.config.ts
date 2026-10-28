@@ -83,10 +83,12 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     // Requests pass through middleware, which buffers at most 10 MB by default
-    // and silently truncates anything larger. Allow the largest upload the app
-    // accepts (sources and music tracks), plus room for multipart overhead.
+    // and silently truncates anything larger. Allow the largest body the app
+    // accepts — an upload, a music track, or a 200 MB notebook import — plus
+    // room for multipart overhead.
     middlewareClientMaxBodySize:
-      Number(process.env.MAX_UPLOAD_BYTES || 50 * 1024 * 1024) + 1024 * 1024,
+      Math.max(Number(process.env.MAX_UPLOAD_BYTES || 50 * 1024 * 1024), 200 * 1024 * 1024) +
+      1024 * 1024,
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

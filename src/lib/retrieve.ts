@@ -60,6 +60,11 @@ function cosine(a: Float32Array, b: Float32Array): number {
   return na && nb ? dot / (Math.sqrt(na) * Math.sqrt(nb)) : 0;
 }
 
+/** A stored vector is comparable only when its model is the current one. */
+function sameModel(stored: string | null, current: string): boolean {
+  return stored !== null && stored === current;
+}
+
 /** Words too common to say anything about relevance. */
 const STOPWORDS = new Set(
   (
@@ -146,9 +151,11 @@ export async function retrieveWithDiagnostics(
   const all = rows(notebookId, sourceIds);
   if (!all.length) return { passages: [], mismatch: null };
 
+  // Read once: the setting can change while the query is being embedded.
+  const model = embedModel();
   let qv: Float32Array | null = null;
   try {
-    qv = new Float32Array((await embed([query]))[0]);
+    qv = new Float32Array((await embed([query], model))[0]);
   } catch {
     qv = null; // fall back to keyword-only ranking
   }
@@ -159,11 +166,12 @@ export async function retrieveWithDiagnostics(
 
   const scored = all.map((r) => {
     const ev = blobToFloats(r.embedding);
-    // cosine() returns 0 for unequal lengths; count those so the degradation
-    // can be surfaced instead of quietly halving result quality.
+    // Different models can share a dimension but not a vector space, so the
+    // stored model must match as well as the length. Anything else is counted
+    // so the degradation can be surfaced instead of quietly halving quality.
     let sem = 0;
     if (qv && ev.length) {
-      if (ev.length === qv.length) {
+      if (ev.length === qv.length && sameModel(r.embed_model, model)) {
         sem = cosine(qv, ev);
       } else {
         staleCount++;
@@ -186,14 +194,14 @@ export async function retrieveWithDiagnostics(
         staleChunks: staleCount,
         totalChunks: all.length,
         models: [...stale],
-        currentModel: embedModel(),
+        currentModel: model,
       }
     : null;
 
   if (mismatch) {
     console.warn(
       `[retrieve] ${staleCount}/${all.length} chunks were embedded with ` +
-        `${[...stale].join(", ")} but the current model is ${embedModel()}. ` +
+        `${[...stale].join(", ")} but the current model is ${model}. ` +
         `Those chunks are ranked by keyword only. Re-embed to restore semantic search.`
     );
   }
@@ -359,6 +367,7 @@ export async function searchPassages(
   const q = query.trim();
   if (!q) return { hits: [], semantic: false };
   let sql = `SELECT c.id, c.source_id, c.notebook_id, c.idx, c.text, c.embedding,
+                    c.embed_model, c.embed_dims,
                     s.title, n.title AS notebook_title
              FROM chunks c
              JOIN sources s ON s.id = c.source_id
@@ -375,9 +384,10 @@ export async function searchPassages(
   if (!all.length) return { hits: [], semantic: false };
 
   let qv: Float32Array | null = null;
+  const model = embedModel();
   if (opts.mode === "vector") {
     try {
-      qv = new Float32Array((await embed([q]))[0]);
+      qv = new Float32Array((await embed([q], model))[0]);
     } catch {
       qv = null;
     }
@@ -391,12 +401,13 @@ export async function searchPassages(
     .map((r) => {
       let kw = kwScore(r.text);
       if (r.text.toLowerCase().includes(phrase)) kw = Math.max(kw, 1);
-      let sem = 0;
+      let sem: number | null = null;
       if (qv) {
         const ev = blobToFloats(r.embedding);
-        if (ev.length === qv.length) sem = cosine(qv, ev);
+        if (ev.length === qv.length && sameModel(r.embed_model, model)) sem = cosine(qv, ev);
       }
-      const score = qv ? sem * 0.85 + kw * 0.15 : kw;
+      // Chunks from another model are ranked by keywords alone, as in chat.
+      const score = sem !== null ? sem * 0.85 + kw * 0.15 : kw;
       return {
         id: r.id,
         sourceId: r.source_id,
@@ -406,9 +417,20 @@ export async function searchPassages(
         idx: r.idx,
         text: r.text,
         score,
-      } satisfies SearchHit;
+        semantic: sem !== null,
+      };
     })
-    .filter((h) => (h.score ?? 0) > (qv ? 0.2 : 0));
+    .filter((h) => (h.score ?? 0) > (qv && h.semantic ? 0.2 : 0))
+    .map((h): SearchHit => ({
+      id: h.id,
+      sourceId: h.sourceId,
+      sourceTitle: h.sourceTitle,
+      notebookId: h.notebookId,
+      notebookTitle: h.notebookTitle,
+      idx: h.idx,
+      text: h.text,
+      score: h.score,
+    }));
   scored.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
   return { hits: scored.slice(0, opts.k ?? 20), semantic: !!qv };
 }
