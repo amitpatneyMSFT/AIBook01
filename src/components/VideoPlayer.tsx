@@ -169,7 +169,14 @@ export default function VideoPlayer({
                   >
                     {s.label}
                   </span>
-                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-track-soft">
+                  <div
+                    role="progressbar"
+                    aria-label={s.label}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(pct)}
+                    className="h-1 flex-1 overflow-hidden rounded-full bg-track-soft"
+                  >
                     <div
                       className="h-full rounded-full bg-[var(--accent)] transition-all motion-reduce:transition-none"
                       style={{ width: `${pct}%` }}
@@ -177,7 +184,12 @@ export default function VideoPlayer({
                   </div>
                   <span className="w-12 shrink-0 text-right font-mono text-[10px] text-[var(--muted)] tabular-nums">
                     {state === "now" && progress?.total
-                      ? `${progress.done}/${progress.total}`
+                      ? s.key === "rendering"
+                        ? // The renderer reports a percent; before it does, or for a renderer that cannot, there is nothing to count.
+                          progress.total > 1
+                          ? `${Math.round(pct)}%`
+                          : ""
+                        : `${progress.done}/${progress.total}`
                       : state === "done"
                         ? "done"
                         : ""}

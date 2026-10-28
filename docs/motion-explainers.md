@@ -113,6 +113,10 @@ a description directly. Unknown values fall back to the default.
 sources ─► scene planner ─► pictures ─► narration ─► timeline ─► renderer ─► MP4
 ```
 
+While it builds, the card lists each stage with a bar. Pictures and narration
+count scenes done; the animating stage shows the percent of the video rendered,
+which both renderers report as they go.
+
 1. **Plan** (`src/lib/motion.ts`). One JSON call to the studio script model
    writes the scenes, a palette and a description of the recurring character,
    following the chosen length, tone, audience and closing message. The

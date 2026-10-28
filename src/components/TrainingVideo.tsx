@@ -817,6 +817,27 @@ export default function TrainingVideo({
               );
             })}
           </ol>
+          {stage === "composing" &&
+            typeof content.progress?.renderPct === "number" && (
+              <div className="mt-3 flex items-center gap-3">
+                <div
+                  role="progressbar"
+                  aria-label="Composing the video"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={content.progress.renderPct}
+                  className="h-1 flex-1 overflow-hidden rounded-full bg-track-soft"
+                >
+                  <div
+                    className="h-full rounded-full bg-[var(--accent)] transition-all motion-reduce:transition-none"
+                    style={{ width: `${content.progress.renderPct}%` }}
+                  />
+                </div>
+                <span className="w-10 shrink-0 text-right font-mono text-[10px] text-[var(--muted)] tabular-nums">
+                  {content.progress.renderPct}%
+                </span>
+              </div>
+            )}
           {savedComposed && clips.length > 0 && (
             <div
               className="mt-3 flex flex-wrap items-center gap-1"

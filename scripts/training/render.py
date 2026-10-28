@@ -424,7 +424,7 @@ for n in range(frames_total):
         frame = Image.blend(black, frame, edge)
     proc.stdin.write(frame.convert("RGB").tobytes())
 
-    if n % (FPS * 10) == 0:
+    if n % (FPS * 2) == 0:
         print(f"frame {n}/{frames_total}", file=sys.stderr, flush=True)
 
 for clip in clips:

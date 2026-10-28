@@ -143,7 +143,9 @@ configured, timing is estimated from the word count and the preview is silent.
    background is keyed out.
 
 Compositing takes roughly a minute of computer time per minute of 720p video,
-and longer at 1080p. It needs Python with `numpy`, `Pillow` and
+and longer at 1080p. While it runs, the card shows a bar and percentage of the
+video drawn so far; the renderer reports it every couple of seconds of video.
+It needs Python with `numpy`, `Pillow` and
 `imageio-ffmpeg`, the same as whiteboard and motion videos. Run
 `npm run check:training` to compose a short synthetic video and confirm the
 setup works. It needs no Azure or model access.

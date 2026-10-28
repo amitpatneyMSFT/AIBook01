@@ -21,6 +21,7 @@ import {
 } from "./videobuild";
 import { stampWatermark } from "./watermark";
 import { motionRenderer, renderMotionWithHyperframes } from "./hyperframes";
+import { throttleProgress } from "./renderprogress";
 
 type AssetJob = {
   key: string;
@@ -163,7 +164,7 @@ async function runBuild(
   });
 
   setProgress(id, {
-    progress: { stage: "rendering", done: 0, total: 1 } satisfies VideoProgress,
+    progress: { stage: "rendering", done: 0, total: 100 } satisfies VideoProgress,
   });
 
   const slash = (p: string) => p.replace(/\\/g, "/");
@@ -194,11 +195,24 @@ async function runBuild(
   const configPath = path.join(work, "config.json");
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
+  // Rendering reports a whole percent, which the page draws as a bar. A fresh
+  // reporter per attempt starts a fallback render's bar over.
+  const reporter = () => {
+    setProgress(id, {
+      progress: { stage: "rendering", done: 0, total: 100 } satisfies VideoProgress,
+    });
+    return throttleProgress((percent) =>
+      setProgress(id, {
+        progress: { stage: "rendering", done: percent, total: 100 } satisfies VideoProgress,
+      }),
+    );
+  };
+
   let fallback: string | undefined;
   let rendered = false;
   if (motionRenderer() === "hyperframes") {
     try {
-      await renderMotionWithHyperframes(config, configPath, out, work);
+      await renderMotionWithHyperframes(config, configPath, out, work, reporter());
       rendered = fs.existsSync(out);
     } catch (e) {
       console.warn("[motion] HyperFrames render failed, using the standard renderer", e);
@@ -206,7 +220,7 @@ async function runBuild(
         "HyperFrames could not render this video, so the standard renderer was used.";
     }
   }
-  if (!rendered) await runPythonRenderer(["motion", "render.py"], configPath);
+  if (!rendered) await runPythonRenderer(["motion", "render.py"], configPath, reporter());
 
   if (!fs.existsSync(out)) {
     throw new Error("The renderer finished but produced no file.");
