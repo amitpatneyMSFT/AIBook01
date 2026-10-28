@@ -57,8 +57,9 @@ function normalize(type: ArtifactType, raw: Loose): Loose {
           const o = q as Loose;
           const choices = arr(o.choices).map((c) => str(c)).filter(Boolean);
           if (!str(o.question) || choices.length < 2) return null;
-          let idx = Number(o.answerIndex);
-          if (!Number.isInteger(idx) || idx < 0 || idx >= choices.length) idx = 0;
+          const idx = Number(o.answerIndex);
+          // Guessing the first choice would mark an arbitrary answer correct.
+          if (!Number.isInteger(idx) || idx < 0 || idx >= choices.length) return null;
 
           // Models cluster the correct answer in the first position however
           // firmly the prompt asks otherwise — a generated six-question quiz
@@ -146,7 +147,7 @@ function normalize(type: ArtifactType, raw: Loose): Loose {
       return {
         title: str(raw.title, STUDIO[type].label),
         subtitle: str(raw.subtitle),
-        markdown: str(raw.markdown) || str(raw.content) || "_No content returned._",
+        markdown: str(raw.markdown) || str(raw.content),
       };
     }
   }

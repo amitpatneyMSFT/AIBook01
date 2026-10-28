@@ -481,7 +481,8 @@ async function createChat(
   options: { signal?: AbortSignal } = {},
   client: OpenAI | AzureOpenAI = getClient()
 ) {
-  reserve("chat", 4);
+  // Priced by prompt size: studio calls send tens of thousands of characters.
+  reserve("chat", Math.max(4, Math.ceil(JSON.stringify(params.messages ?? "").length / 8000)));
   const model = params.model;
   const withoutTemp = () => {
     const { temperature: _omit, ...rest } = params;
@@ -816,7 +817,7 @@ function sideClient(ep: ResolvedEndpoint): OpenAI | null {
   return c;
 }
 
-export async function embed(texts: string[]): Promise<number[][]> {
+export async function embed(texts: string[], model: string = embedModel()): Promise<number[][]> {
   const unavailable = embeddingUnavailableReason();
   if (unavailable) throw new Error(unavailable);
   const c = sideClient(embedEndpoint) ?? getClient();
@@ -827,7 +828,7 @@ export async function embed(texts: string[]): Promise<number[][]> {
     reserve("embed", 1);
     const slice = texts.slice(i, i + BATCH).map((t) => t.slice(0, 8000) || " ");
     const res = await withRetry(
-      () => c.embeddings.create({ model: embedModel(), input: slice }),
+      () => c.embeddings.create({ model, input: slice }),
       "embeddings"
     );
     for (const d of res.data) out.push(d.embedding as number[]);

@@ -234,10 +234,11 @@ export async function reindexSource(
   if (!row) throw new Error("Source not found.");
 
   const chunks = chunkText(text);
+  const model = embedModel();
   let vectors: number[][] | null = null;
   let warning: string | undefined;
   try {
-    vectors = await embed(chunks);
+    vectors = await embed(chunks, model);
   } catch (e) {
     warning = `Re-indexed without embeddings — ${
       e instanceof Error ? e.message : "the embedding call failed"
@@ -262,7 +263,7 @@ export async function reindexSource(
         i,
         c,
         vec ? floatsToBlob(vec) : null,
-        vec ? embedModel() : null,
+        vec ? model : null,
         vec ? vec.length : null
       );
     });

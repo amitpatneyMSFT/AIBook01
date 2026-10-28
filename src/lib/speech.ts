@@ -116,7 +116,7 @@ function buildSsml(
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function synthesize(ssml: string, format?: string): Promise<Buffer> {
-  reserve("speech", 4);
+  reserve("speech", Math.max(4, Math.ceil(ssml.length / 1000) * 3));
   const url = `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`;
   const headers: Record<string, string> = {
     "Content-Type": "application/ssml+xml",

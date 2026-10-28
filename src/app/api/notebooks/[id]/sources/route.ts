@@ -51,8 +51,10 @@ async function ingestOne(
   // Embedding is the slow, fallible step, so it runs before anything is
   // written: a failure or crash here leaves no half-ingested source behind.
   let vectors: number[][] | null = null;
+  // Read before the call: the model setting may change while it is in flight.
+  const model = embedModel();
   try {
-    vectors = await embed(chunks);
+    vectors = await embed(chunks, model);
   } catch (e) {
     console.warn("[ingest] embeddings unavailable, keyword search only:", e);
     const detail =
@@ -83,7 +85,7 @@ async function ingestOne(
         vec ? floatsToBlob(vec) : null,
         // Stamped so retrieval can tell whether a stored vector is comparable
         // with the current model's output.
-        vec ? embedModel() : null,
+        vec ? model : null,
         vec ? vec.length : null
       );
     });
