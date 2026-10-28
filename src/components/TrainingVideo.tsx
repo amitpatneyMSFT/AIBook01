@@ -67,6 +67,7 @@ import TrainingPreview from "./TrainingPreview";
 import VoicePicker from "./VoicePicker";
 import type { VisualContext } from "./TrainingVisual";
 import { prepareRasters } from "./trainingRaster";
+import { trainingRequest, TrainingRequestError } from "@/lib/trainingrequest";
 
 const PRESENTER_STAGES: { key: string; label: string }[] = [
   { key: "submitting", label: "Sending the transcript to Azure" },
@@ -374,16 +375,16 @@ export default function TrainingVideo({
   const patch = async (
     body: Record<string, unknown>,
   ): Promise<TrainingContent> => {
-    const res = await fetch(`/api/training/${artifactId}`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const j = (await res.json().catch(() => ({}))) as {
-      error?: string;
-      content?: TrainingContent;
-    };
-    if (!res.ok || !j.content)
+    const j = await trainingRequest<{ error?: string; content?: TrainingContent }>(
+      `/api/training/${artifactId}`,
+      "Saving the transcript",
+      {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+    );
+    if (!j.content)
       throw new Error(j.error || "Could not save the transcript.");
     return j.content;
   };
@@ -432,21 +433,34 @@ export default function TrainingVideo({
     let n = 0;
     for (const q of pending) {
       onStep(++n, pending.length);
-      const res = await fetch(`/api/training/${artifactId}/assets/find`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          query: q.imageQuery,
-          prompt: q.imagePrompt,
-          exclude: used,
-        }),
-      });
-      const j = (await res.json().catch(() => ({}))) as {
-        imageId?: string;
-        credit?: string;
-        source?: string;
-      };
-      if (!res.ok || !j.imageId) {
+      let j: { imageId?: string; credit?: string; source?: string; error?: string };
+      try {
+        j = await trainingRequest<{
+          imageId?: string;
+          credit?: string;
+          source?: string;
+          error?: string;
+        }>(
+          `/api/training/${artifactId}/assets/find`,
+          `Finding picture ${n} of ${pending.length}`,
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({
+              query: q.imageQuery,
+              prompt: q.imagePrompt,
+              exclude: used,
+            }),
+          },
+        );
+      } catch (e) {
+        if (e instanceof TrainingRequestError && e.status === 404) {
+          failed++;
+          continue;
+        }
+        throw e;
+      }
+      if (!j.imageId) {
         failed++;
         continue;
       }
@@ -489,10 +503,10 @@ export default function TrainingVideo({
         s.cues?.some((q) => q.infographicId && !graphics.has(q.infographicId)),
       )
     ) {
-      const res = await fetch(`/api/training/${artifactId}/infographics`);
-      const j = (await res.json().catch(() => ({}))) as {
+      const j = await trainingRequest<{
+        error?: string;
         items?: { id: string; title: string; content: InfographicContent }[];
-      };
+      }>(`/api/training/${artifactId}/infographics`, "Loading infographics");
       setInfographics(j.items ?? []);
       graphics = new Map((j.items ?? []).map((g) => [g.id, g.content]));
       const gone = saved.sections
@@ -535,23 +549,35 @@ export default function TrainingVideo({
   const run = async (what: "save" | "render") => {
     setBusy(what);
     setError(null);
+    let step = "Saving the transcript";
     try {
       let saved = content;
       if (dirty) saved = await save();
       if (what === "render") {
         if (normalizeComposition(saved.composition).mode === "composed") {
+          step = "Preparing the visuals";
           await prepareComposed(saved);
-          setPrep("Starting the render");
         }
-        const res = await fetch(`/api/training/${artifactId}/render`, {
+        step = "Starting the render";
+        setPrep(step);
+        await trainingRequest<{ error?: string }>(`/api/training/${artifactId}/render`, "Starting the render", {
           method: "POST",
         });
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) throw new Error(j.error || "Could not start the render.");
+        step = "Refreshing render progress";
         await refresh.current();
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      console.error("[training] action failed", { artifactId, action: what, step }, e);
+      const detail = e instanceof Error ? e.message : "Something went wrong.";
+      setError(
+        e instanceof TrainingRequestError
+          ? e.message
+          : `${step} failed: ${detail}${
+              step === "Refreshing render progress"
+                ? " The render was submitted. Reopen the video to check its progress before rendering again."
+                : ""
+            }`,
+      );
     } finally {
       setBusy(null);
       setPrep(null);

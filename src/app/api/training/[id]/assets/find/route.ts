@@ -3,6 +3,7 @@ import { ok, fail } from "@/lib/http";
 import { loadTraining } from "@/lib/trainingroute";
 import { findPicture, pictureSession } from "@/lib/trainingpictures";
 import { compositionPalette, normalizeComposition } from "@/lib/trainingvisuals";
+import { keepAliveJSON } from "@/lib/keepalive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,6 +21,10 @@ const text = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/\s
  * 404 when nothing fits.
  */
 export async function POST(req: Request, { params }: Ctx) {
+  return keepAliveJSON(() => find(req, params));
+}
+
+async function find(req: Request, params: Ctx["params"]) {
   try {
     const { id } = await params;
     const t = loadTraining(id);

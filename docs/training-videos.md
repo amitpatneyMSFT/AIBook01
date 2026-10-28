@@ -36,6 +36,22 @@ time it is sent for rendering. See
 The **Mark** picker stamps an optional text or image watermark in one of nine
 positions after the music is mixed; see [Watermark](studio.md#watermark).
 
+### Troubleshooting render preparation
+
+**Render video** saves edits, finds missing pictures, draws and uploads visuals,
+then submits the render. A failure identifies the step; request failures include
+the HTTP method, endpoint and status, or **no HTTP response** when the browser
+could not obtain one. The browser **Console** contains the original error and
+request context. Drawing failures identify the visual and section instead:
+image or font loading during browser capture can fail before any render request
+is sent, so there may be no render response in the Network panel.
+
+Slow picture lookup and render submission keep the connection active while
+waiting for the server.
+If the connection drops during submission, check the video's progress before
+clicking **Render video** again: Azure may already have accepted the job.
+Completed visual uploads are cached and reused on the next attempt.
+
 ## Presenter with visuals
 
 A composed training video starts with the avatar and lays visuals over and

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AvatarNotConfiguredError } from "@/lib/avatarbatch";
 import { startTrainingRender } from "@/lib/trainingbuild";
+import { keepAliveJSON } from "@/lib/keepalive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -13,6 +14,10 @@ type Ctx = { params: Promise<{ id: string }> };
  */
 export async function POST(_req: Request, { params }: Ctx) {
   const { id } = await params;
+  return keepAliveJSON(() => submit(id));
+}
+
+async function submit(id: string) {
   try {
     await startTrainingRender(id);
     return NextResponse.json({ ok: true });
