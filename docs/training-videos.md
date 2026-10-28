@@ -150,6 +150,33 @@ setup works. It needs no Azure or model access.
 Use `npm run check:training -- --no-animation` to check the animation-free
 rendering path.
 
+### The HyperFrames compositor
+
+Set `TRAINING_RENDERER=hyperframes` to compose with
+[HyperFrames](https://github.com/heygen-com/hyperframes) instead of
+`render.py`. The timeline is the same, so the preview, the captions file and the
+timing do not change. Only step 4 differs:
+`src/lib/traininghyperframes.ts` turns the timeline into one HTML composition
+(the stage, each visual's drawings, the presenter's clips inside a wrapper that
+glides between poses, cards, lower third, captions and logo, all animated with
+GSAP), and `src/lib/hyperframes.ts` renders it in headless Chrome at 30 fps.
+`scripts/training/hf_assist.py` then normalizes the loudness to −16 LUFS, so the
+music mix and watermark steps work as before. Captions are real text, so they
+render sharper than the compositor's.
+
+It needs, besides Python: Node (the app's own), `ffmpeg` on `PATH`, Chrome (which
+HyperFrames downloads on first use) and network access for `npx` to fetch the
+pinned HyperFrames release the first time. Set `HYPERFRAMES_BIN` to use an
+installed `hyperframes` instead. Each worker is a Chrome process, so
+`HYPERFRAMES_WORKERS` limits how many run at once. The Docker image does not include
+these; the app falls back to the Python compositor, and the video's note says
+so, whenever HyperFrames cannot render, or when a presenter clip arrived
+without transparency (only `render.py` keys out a flat background).
+
+Run `npm run check:training -- --hyperframes` to compose the synthetic video
+this way. The bundled `scripts/training/gsap.min.js` is GSAP, used under its
+[standard license](https://gsap.com/standard-license/).
+
 ## Sample
 
 [![A presenter on a slate background, with the subtitle "If you build or manage agents in Copilot Studio, the pace of change is fast"](screenshots/training-video.jpg)](https://github.com/user-attachments/assets/7651fdca-42dd-45e4-8e56-f56f07c3b6d9)
